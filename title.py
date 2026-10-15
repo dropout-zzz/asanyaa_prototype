@@ -13,14 +13,14 @@ class TitleForm(QWidget):
     self.__gw = None
 
     self.__ui.pushButton_quit.clicked.connect(self.__do_quit)
-    self.__ui.pushButton_startGame.clicked.connect(self.__do_start_game)
+    self.__ui.pushButton_newGame.clicked.connect(self.__do_new_game)
 
   @QtCore.Slot()
   def __do_quit(self):
     self.__qapp.quit()
 
   @QtCore.Slot()
-  def __do_start_game(self):
+  def __do_new_game(self):
     # TODO: load ACT_A and 0000_00, use it to construct a fresh script executor at instruction #0 and feed it into GameWindow
     self.__gw = GameWindow(self)
     self.__gw.show()
