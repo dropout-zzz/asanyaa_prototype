@@ -27,10 +27,16 @@ class SptDesc:
   next_script_sub_id: list[int] = dataclasses.field(default_factory=lambda: [0] * 10)
 
 @dataclass
+class StringTableEntry:
+  text_id: int = 0
+  offset_in_txd: int = 0
+  length: int = 0
+
+@dataclass
 class Act:
-  # TODO: preload script metadatas and string table info plus its buffer
   script_map: dict[tuple[int, int], SptDesc] = dataclasses.field(default_factory=dict)
   strtab: bytes = b''
+  str_info: dict[int, StringTableEntry] = dataclasses.field(default_factory=dict)
 
 def load_act(asset_root: str, letter: str) -> Act:
   if len(letter) != 1 or letter not in string.ascii_uppercase:
@@ -84,5 +90,28 @@ def load_act(asset_root: str, letter: str) -> Act:
 
   with open(os.path.join(asset_root, 'data', f'ACT_{letter}_JA.TXD'), 'rb') as f:
     act.strtab = f.read()
+
+  with open(os.path.join(asset_root, 'data', f'ACT_{letter}_JA.PTR'), 'rb') as f:
+    with io.BytesIO(f.read()) as buf:
+      if buf.read(4) != b'PTR ':
+        raise ValueError('bad file magic')
+
+      n_entries = int.from_bytes(buf.read(4), sys.byteorder)
+      if len(buf.getbuffer()) != 16 + n_entries * 12:
+        raise ValueError('bad file size')
+
+      buf.read(8)  # skip unk1
+
+      while n_entries > 0:
+        text_id, offset_in_txd, length = struct.unpack('III', buf.read(12))
+        entry = StringTableEntry()
+        entry.text_id = text_id
+        entry.offset_in_txd = offset_in_txd
+        entry.length = length
+
+        if text_id in act.str_info:
+          raise ValueError(f'duplicate text ID: {text_id}')
+        act.str_info[text_id] = entry
+        n_entries -= 1
 
   return act
