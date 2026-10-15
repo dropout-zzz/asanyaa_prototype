@@ -3,7 +3,7 @@ from ui_game_window import Ui_GameWindow
 from PySide6 import QtCore
 
 class GameWindow(QWidget):
-  def __init__(self, title_window):
+  def __init__(self, title_window: QWidget):
     QWidget.__init__(self)
     self.__ui = Ui_GameWindow()
     self.__ui.setupUi(self)
