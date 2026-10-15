@@ -83,6 +83,32 @@
      </rect>
     </property>
    </widget>
+   <widget class="QPushButton" name="pushButton_saveGame">
+    <property name="geometry">
+     <rect>
+      <x>1140</x>
+      <y>30</y>
+      <width>61</width>
+      <height>71</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>SAVE</string>
+    </property>
+   </widget>
+   <widget class="QPushButton" name="pushButton_loadGame">
+    <property name="geometry">
+     <rect>
+      <x>1210</x>
+      <y>30</y>
+      <width>61</width>
+      <height>71</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>LOAD</string>
+    </property>
+   </widget>
   </widget>
  </widget>
  <resources/>
