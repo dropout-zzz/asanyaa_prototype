@@ -43,6 +43,9 @@
       <height>71</height>
      </rect>
     </property>
+    <property name="focusPolicy">
+     <enum>Qt::FocusPolicy::NoFocus</enum>
+    </property>
     <property name="text">
      <string>TITLE</string>
     </property>
@@ -92,6 +95,9 @@
       <height>71</height>
      </rect>
     </property>
+    <property name="focusPolicy">
+     <enum>Qt::FocusPolicy::NoFocus</enum>
+    </property>
     <property name="text">
      <string>SAVE</string>
     </property>
@@ -104,6 +110,9 @@
       <width>61</width>
       <height>71</height>
      </rect>
+    </property>
+    <property name="focusPolicy">
+     <enum>Qt::FocusPolicy::NoFocus</enum>
     </property>
     <property name="text">
      <string>LOAD</string>

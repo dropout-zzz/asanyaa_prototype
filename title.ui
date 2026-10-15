@@ -34,6 +34,9 @@
      <height>51</height>
     </rect>
    </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
    <property name="text">
     <string>はじめから</string>
    </property>
@@ -47,6 +50,9 @@
      <height>51</height>
     </rect>
    </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
+   </property>
    <property name="text">
     <string>つづきから</string>
    </property>
@@ -59,6 +65,9 @@
      <width>171</width>
      <height>51</height>
     </rect>
+   </property>
+   <property name="focusPolicy">
+    <enum>Qt::FocusPolicy::NoFocus</enum>
    </property>
    <property name="text">
     <string>ゲーム終了</string>
