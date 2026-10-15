@@ -40,6 +40,9 @@ def load_act(asset_root: str, letter: str) -> Act:
   with open(os.path.join(asset_root, 'data', f'ACT_{letter}.DAT'), 'rb') as f:
     with io.BytesIO(f.read()) as buf:
       n_spt_files = int.from_bytes(buf.read(4), sys.byteorder)
+      if len(buf.getbuffer()) != 4 + n_spt_files * 156:
+        raise ValueError('bad file size')
+
       while n_spt_files > 0:
         spt_desc = SptDesc()
 
