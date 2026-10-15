@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0" connectslotsbyname="false">
+ <class>TitleForm</class>
+ <widget class="QWidget" name="TitleForm">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1280</width>
+    <height>720</height>
+   </rect>
+  </property>
+  <property name="minimumSize">
+   <size>
+    <width>1280</width>
+    <height>720</height>
+   </size>
+  </property>
+  <property name="maximumSize">
+   <size>
+    <width>1280</width>
+    <height>720</height>
+   </size>
+  </property>
+  <property name="windowTitle">
+   <string>Title</string>
+  </property>
+  <widget class="QPushButton" name="pushButton_startGame">
+   <property name="geometry">
+    <rect>
+     <x>80</x>
+     <y>619</y>
+     <width>171</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>はじめから</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pushButton_loadGame">
+   <property name="geometry">
+    <rect>
+     <x>289</x>
+     <y>620</y>
+     <width>171</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>つづきから</string>
+   </property>
+  </widget>
+  <widget class="QPushButton" name="pushButton_quit">
+   <property name="geometry">
+    <rect>
+     <x>1029</x>
+     <y>620</y>
+     <width>171</width>
+     <height>51</height>
+    </rect>
+   </property>
+   <property name="text">
+    <string>ゲーム終了</string>
+   </property>
+  </widget>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>
