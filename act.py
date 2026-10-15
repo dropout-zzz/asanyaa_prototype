@@ -34,6 +34,7 @@ class StringTableEntry:
 
 @dataclass
 class Act:
+  letter: str = 'A'
   script_map: dict[tuple[int, int], SptDesc] = dataclasses.field(default_factory=dict)
   strtab: bytes = b''
   str_info: dict[int, StringTableEntry] = dataclasses.field(default_factory=dict)
@@ -43,6 +44,7 @@ def load_act(asset_root: str, letter: str) -> Act:
     raise ValueError(f'not a script letter: {letter!r}')
 
   act = Act()
+  act.letter = letter
 
   with open(os.path.join(asset_root, 'data', f'ACT_{letter}.DAT'), 'rb') as f:
     with io.BytesIO(f.read()) as buf:

@@ -6,6 +6,7 @@ import string
 import os.path
 import io
 import sys
+from act import Act
 
 @dataclass
 class Instruction:
@@ -14,6 +15,9 @@ class Instruction:
 
 @dataclass
 class Script:
+  letter: str = 'A'
+  script_id: int = 0
+  script_sub_id: int = 0
   instructions: list[Instruction] = dataclasses.field(default_factory=list)
 
 def load_script(asset_root: str, letter: str, script_id: int, script_sub_id: int) -> Script:
@@ -21,6 +25,9 @@ def load_script(asset_root: str, letter: str, script_id: int, script_sub_id: int
     raise ValueError(f'not a script letter: {letter!r}')
 
   script = Script()
+  script.letter = letter
+  script.script_id = script_id
+  script.script_sub_id = script_sub_id
 
   with open(os.path.join(asset_root, 'data', f'{letter}{script_id:04}_{script_sub_id:02}.spt'), 'rb') as f:
     with io.BytesIO(f.read()) as buf:
@@ -37,3 +44,10 @@ def load_script(asset_root: str, letter: str, script_id: int, script_sub_id: int
         n_instruction -= 1
 
   return script
+
+class ScriptExecutor:
+  def __init__(self, act: Act, script: Script):
+    if act.letter != script.letter or (script.script_id, script.script_sub_id) not in act.script_map:
+      raise ValueError('unrelated script and act passed')
+    self.__current_act = act
+    self.__current_script = script
