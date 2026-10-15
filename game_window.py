@@ -12,6 +12,8 @@ class GameWindow(QWidget):
 
     self.__ui.pushButton_backToTitle.clicked.connect(self.__do_back_to_title)
 
+    # TODO: register script executor callbacks and continue execution
+
   @QtCore.Slot()
   def __do_back_to_title(self):
     self.__tw.show()

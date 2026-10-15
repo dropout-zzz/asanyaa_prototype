@@ -21,6 +21,7 @@ class TitleForm(QWidget):
 
   @QtCore.Slot()
   def __do_start_game(self):
+    # TODO: load ACT_A and 0000_00, use it to construct a fresh script executor at instruction #0 and feed it into GameWindow
     self.__gw = GameWindow(self)
     self.__gw.show()
     self.close()
