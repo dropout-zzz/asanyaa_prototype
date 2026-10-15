@@ -28,7 +28,7 @@ class TitleForm(QWidget):
     # TODO: load ACT_A and 0000_00, use it to construct a fresh script executor at instruction #0 and feed it into GameWindow
     act = load_act(self.__asset_root, 'A')
     script = load_script(self.__asset_root, 'A', 0, 0)
-    executor = ScriptExecutor(act, script)
+    executor = ScriptExecutor(act, script, 0)
     self.__gw = GameWindow(self, executor)
     self.__gw.show()
     self.close()

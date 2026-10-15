@@ -7,6 +7,7 @@ import os.path
 import io
 import sys
 from act import Act
+from act import ScriptType
 
 @dataclass
 class Instruction:
@@ -46,8 +47,12 @@ def load_script(asset_root: str, letter: str, script_id: int, script_sub_id: int
   return script
 
 class ScriptExecutor:
-  def __init__(self, act: Act, script: Script):
+  def __init__(self, act: Act, script: Script, instruction_pos: int):
     if act.letter != script.letter or (script.script_id, script.script_sub_id) not in act.script_map:
       raise ValueError('unrelated script and act passed')
     self.__current_act = act
     self.__current_script = script
+
+    if act.script_map[(script.script_id, script.script_sub_id)].script_type == ScriptType.SELECTION and instruction_pos != 0:
+      raise ValueError('attempted to resume from middle of a selection script')
+    self.__current_instruction = instruction_pos
