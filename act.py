@@ -30,6 +30,7 @@ class SptDesc:
 class Act:
   # TODO: preload script metadatas and string table info plus its buffer
   script_map: dict[tuple[int, int], SptDesc] = dataclasses.field(default_factory=dict)
+  strtab: bytes = b''
 
 def load_act(asset_root: str, letter: str) -> Act:
   if len(letter) != 1 or letter not in string.ascii_uppercase:
@@ -80,5 +81,8 @@ def load_act(asset_root: str, letter: str) -> Act:
           raise ValueError(f'duplicate script: {script_id:04}_{script_sub_id:02}')
         act.script_map[script_map_key] = spt_desc
         n_spt_files -= 1
+
+  with open(os.path.join(asset_root, 'data', f'ACT_{letter}_JA.TXD'), 'rb') as f:
+    act.strtab = f.read()
 
   return act
