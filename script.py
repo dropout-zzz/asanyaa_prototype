@@ -24,6 +24,8 @@ class Script:
 def load_script(asset_root: str, letter: str, script_id: int, script_sub_id: int) -> Script:
   if len(letter) != 1 or letter not in string.ascii_uppercase:
     raise ValueError(f'not a script letter: {letter!r}')
+  if script_id < 0 or script_sub_id < 0:
+    raise ValueError('invalid script id or sub id passed')
 
   script = Script()
   script.letter = letter
