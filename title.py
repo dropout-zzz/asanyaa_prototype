@@ -5,9 +5,10 @@ from game_window import GameWindow
 from act import load_act
 from script import load_script
 from script import ScriptExecutor
+from foo import Foo
 
 class TitleForm(QWidget):
-  def __init__(self, qapplication: QApplication, asset_root: str):
+  def __init__(self, qapplication: QApplication, asset_root: str, foo: Foo):
     QWidget.__init__(self)
     self.__ui = Ui_TitleForm()
     self.__ui.setupUi(self)
@@ -15,6 +16,7 @@ class TitleForm(QWidget):
     self.__qapp = qapplication
     self.__gw = None
     self.__asset_root = asset_root
+    self.__foo = foo
 
     self.__ui.pushButton_quit.clicked.connect(self.__do_quit)
     self.__ui.pushButton_newGame.clicked.connect(self.__do_new_game)
