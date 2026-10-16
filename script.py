@@ -8,6 +8,9 @@ import io
 import sys
 from act import Act
 from act import ScriptType
+from act import load_act
+from enum import IntEnum
+import struct
 
 @dataclass
 class Instruction:
@@ -48,15 +51,86 @@ def load_script(asset_root: str, letter: str, script_id: int, script_sub_id: int
 
   return script
 
+class Opcode(IntEnum):
+  DIALOGUE = 0x01
+
 class ScriptExecutor:
-  def __init__(self, act: Act, script: Script, instruction_pos: int):
-    if act.letter != script.letter or (script.script_id, script.script_sub_id) not in act.script_map:
+  def __init__(self, act: Act, script: Script, instruction_pos: int, asset_root: str):
+    script_map_key = (script.script_id, script.script_sub_id)
+
+    if act.letter != script.letter or script_map_key not in act.script_map:
       raise ValueError('unrelated script and act passed')
     self.__current_act = act
     self.__current_script = script
 
-    if act.script_map[(script.script_id, script.script_sub_id)].script_type == ScriptType.SELECTION and instruction_pos != 0:
+    self.__script_type = act.script_map[script_map_key].script_type
+    if self.__script_type == ScriptType.SELECTION and instruction_pos != 0:
       raise ValueError('attempted to resume from middle of a selection script')
     if instruction_pos < 0 or instruction_pos > len(script.instructions) - 1:
       raise ValueError('not a instruction position')
     self.__current_instruction = instruction_pos
+
+    self.__asset_root = asset_root
+
+    self.__selection_prompt: str | None = None
+    self.__choices: list[str] = []
+
+    self.__cb_ask_choices = None
+    self.__cb_show_dialogue_wait = None
+
+  def set_ask_choices_callback(self, fn):
+    self.__cb_ask_choices = fn
+
+  def set_show_dialogue_wait_callback(self, fn):
+    self.__cb_show_dialogue_wait = fn
+
+  def continue_execution(self):
+    while True:
+      inst = self.__current_script.instructions[self.__current_instruction]
+
+      if self.__script_type == ScriptType.SELECTION and inst.opcode != Opcode.DIALOGUE:
+        raise ValueError('disallowed instruction in selection script')
+
+      match inst.opcode:
+        case Opcode.DIALOGUE:
+          character_id, voice_id = struct.unpack('II', inst.arguments[:8])
+
+          text_id = int.from_bytes(inst.arguments[-4:], sys.byteorder)
+          text_info = self.__current_act.str_info[text_id]
+          txd_off = text_info.offset_in_txd
+          name_tag, text_escaped = self.__current_act.strtab[txd_off:txd_off + text_info.length].decode().split(',', 1)
+          text = text_escaped.replace(r'\n', '\n')
+
+          if self.__script_type == ScriptType.SELECTION:
+            if self.__selection_prompt is None:
+              self.__selection_prompt = text
+            else:
+              self.__choices.append(text)
+              if len(self.__choices) > 10:
+                raise ValueError('too many selection choices')
+          else:
+            self.__cb_show_dialogue_wait(name_tag, text, character_id, voice_id)
+
+      self.__current_instruction += 1
+      if self.__current_instruction == len(self.__current_script.instructions):
+        desc = self.__current_act.script_map[(self.__current_script.script_id, self.__current_script.script_sub_id)]
+        if desc.next_script_letter != self.__current_act.letter:
+          self.__current_act = load_act(self.__asset_root, desc.next_script_letter)
+        if self.__script_type == ScriptType.SELECTION:
+          if self.__selection_prompt is None:
+            raise ValueError('missing selection prompt')
+          if len(self.__choices) == 0:
+            raise ValueError('missing selection choices')
+          next_script_sub_id = desc.next_script_sub_id[self.__cb_ask_choices(self.__selection_prompt, self.__choices)]
+          if next_script_sub_id < 0:
+            raise ValueError('missing valid jump target for choice')
+        else:
+          next_script_sub_id = desc.next_script_sub_id[0]
+        self.__current_script = load_script(self.__asset_root, desc.next_script_letter, desc.next_script_id, next_script_sub_id)
+
+        next_script_type = self.__current_act.script_map[(desc.next_script_id, next_script_sub_id)].script_type
+        self.__script_type = next_script_type
+        if next_script_type == ScriptType.SELECTION:
+          self.__selection_prompt = None
+          self.__choices.clear()
+        self.__current_instruction = 0
