@@ -5,6 +5,8 @@ from script import ScriptExecutor
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton
 from PySide6.QtCore import QEventLoop
 from typing import override
+from PySide6.QtGui import QMouseEvent
+from PySide6.QtCore import Qt
 
 class ChoiceButton(QPushButton):
   myCallback = QtCore.Signal(int)
@@ -63,6 +65,18 @@ class GameWindow(QWidget):
       self.__dialogue_wait_event_loop = None
       event_loop.quit()
     QWidget.closeEvent(self, event)
+
+  @override
+  def mousePressEvent(self, event: QMouseEvent):
+    if event.button() == Qt.MouseButton.LeftButton and self.__dialogue_wait_event_loop is not None:
+      # progress the dialogue
+
+      event_loop = self.__dialogue_wait_event_loop
+      self.__dialogue_wait_event_loop = None
+      event_loop.quit()
+      event.accept()
+      return
+    QWidget.mousePressEvent(self, event)
 
   def init(self):
     self.__executor.continue_execution()
