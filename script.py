@@ -11,6 +11,7 @@ from act import ScriptType
 from act import load_act
 from enum import IntEnum
 import struct
+import re
 
 @dataclass
 class Instruction:
@@ -53,6 +54,12 @@ def load_script(asset_root: str, letter: str, script_id: int, script_sub_id: int
 
 class Opcode(IntEnum):
   DIALOGUE = 0x01
+
+_UNESCAPES: dict[str, str] = {r'\n': '\n', '&heart;': '❤'}
+_ESCAPES = re.compile('|'.join(map(re.escape, _UNESCAPES.keys())))
+
+def _get_unescaped(m: re.Match) -> str:
+  return _UNESCAPES[m.group(0)]
 
 class ScriptExecutor:
   def __init__(self, act: Act, script: Script, instruction_pos: int, asset_root: str):
@@ -100,7 +107,7 @@ class ScriptExecutor:
           text_info = self.__current_act.str_info[text_id]
           txd_off = text_info.offset_in_txd
           name_tag, text_escaped = self.__current_act.strtab[txd_off:txd_off + text_info.length].decode().split(',', 1)
-          text = text_escaped.replace(r'\n', '\n')
+          text = _ESCAPES.sub(_get_unescaped, text_escaped)
 
           if self.__script_type == ScriptType.SELECTION:
             if self.__selection_prompt is None:
