@@ -7,6 +7,9 @@ from PySide6.QtCore import QEventLoop
 from typing import override
 from PySide6.QtGui import QMouseEvent
 from PySide6.QtCore import Qt
+from foo import Foo
+import os.path
+from PySide6.QtGui import QPixmap
 
 class ChoiceButton(QPushButton):
   myCallback = QtCore.Signal(int)
@@ -43,7 +46,7 @@ class SelectionDialog(QDialog):
     return self.__selected
 
 class GameWindow(QWidget):
-  def __init__(self, title_window: QWidget, script_executor: ScriptExecutor):
+  def __init__(self, title_window: QWidget, script_executor: ScriptExecutor, foo: Foo, asset_root: str):
     QWidget.__init__(self)
     self.__ui = Ui_GameWindow()
     self.__ui.setupUi(self)
@@ -51,11 +54,14 @@ class GameWindow(QWidget):
     self.__tw = title_window
     self.__executor = script_executor
     self.__dialogue_wait_event_loop: QEventLoop | None = None
+    self.__foo = foo
+    self.__asset_root = asset_root
 
     self.__ui.pushButton_backToTitle.clicked.connect(self.__do_back_to_title)
 
     self.__executor.set_ask_choices_callback(self.__handle_ask_choices)
     self.__executor.set_show_dialogue_wait_callback(self.__handle_show_dialogue_wait)
+    self.__executor.set_set_face_cg_callback(self.__handle_set_face_cg)
 
   @override
   def closeEvent(self, event):
@@ -103,3 +109,12 @@ class GameWindow(QWidget):
       raise RuntimeError
     self.__dialogue_wait_event_loop = QEventLoop(self)
     self.__dialogue_wait_event_loop.exec()
+
+  def __handle_set_face_cg(self, cg_index: int):
+    if cg_index < 0:
+      self.__ui.label_faceImageArea.clear()
+      return
+
+    fcg_name = self.__foo.bmp_tbl.rows[cg_index][0].removesuffix('.kg')
+    file_path = os.path.join(self.__asset_root, 'FCG', f'{fcg_name}.png')
+    self.__ui.label_faceImageArea.setPixmap(QPixmap(file_path, format='PNG'))

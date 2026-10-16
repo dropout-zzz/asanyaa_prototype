@@ -54,6 +54,7 @@ def load_script(asset_root: str, letter: str, script_id: int, script_sub_id: int
 
 class Opcode(IntEnum):
   DIALOGUE = 0x01
+  CHANGE_FACE_CG = 0x2a
 
 _UNESCAPES: dict[str, str] = {r'\n': '\n', '&heart;': '❤'}
 _ESCAPES = re.compile('|'.join(map(re.escape, _UNESCAPES.keys())))
@@ -85,12 +86,16 @@ class ScriptExecutor:
 
     self.__cb_ask_choices = None
     self.__cb_show_dialogue_wait = None
+    self.__cb_set_face_cg = None
 
   def set_ask_choices_callback(self, fn):
     self.__cb_ask_choices = fn
 
   def set_show_dialogue_wait_callback(self, fn):
     self.__cb_show_dialogue_wait = fn
+
+  def set_set_face_cg_callback(self, fn):
+    self.__cb_set_face_cg = fn
 
   def continue_execution(self):
     while True:
@@ -118,6 +123,10 @@ class ScriptExecutor:
                 raise ValueError('too many selection choices')
           else:
             self.__cb_show_dialogue_wait(name_tag, text, character_id, voice_id)
+
+        case Opcode.CHANGE_FACE_CG:
+          cg_index = int.from_bytes(inst.arguments[-4:], sys.byteorder, signed=True)
+          self.__cb_set_face_cg(cg_index)
 
       if self.__want_stop:
         break

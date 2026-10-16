@@ -30,7 +30,7 @@ class TitleForm(QWidget):
     act = load_act(self.__asset_root, 'A')
     script = load_script(self.__asset_root, 'A', 0, 0)
     executor = ScriptExecutor(act, script, 0, self.__asset_root)
-    self.__gw = GameWindow(self, executor)
+    self.__gw = GameWindow(self, executor, self.__foo, self.__asset_root)
     self.__gw.show()
     self.close()
     self.__gw.init()
