@@ -55,4 +55,6 @@ class ScriptExecutor:
 
     if act.script_map[(script.script_id, script.script_sub_id)].script_type == ScriptType.SELECTION and instruction_pos != 0:
       raise ValueError('attempted to resume from middle of a selection script')
+    if instruction_pos < 0 or instruction_pos > len(script.instructions) - 1:
+      raise ValueError('not a instruction position')
     self.__current_instruction = instruction_pos
