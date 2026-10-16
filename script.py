@@ -106,7 +106,7 @@ class ScriptExecutor:
           text_id = int.from_bytes(inst.arguments[-4:], sys.byteorder)
           text_info = self.__current_act.str_info[text_id]
           txd_off = text_info.offset_in_txd
-          name_tag, text_escaped = self.__current_act.strtab[txd_off:txd_off + text_info.length].decode().split(',', 1)
+          name_tag, text_escaped = self.__current_act.strtab[txd_off:txd_off + text_info.length].decode('utf-8').split(',', 1)
           text = _ESCAPES.sub(_get_unescaped, text_escaped)
 
           if self.__script_type == ScriptType.SELECTION:
