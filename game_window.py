@@ -10,6 +10,8 @@ from PySide6.QtCore import Qt
 from foo import Foo
 import os.path
 from PySide6.QtGui import QPixmap
+from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
+from PySide6.QtCore import QUrl
 
 class ChoiceButton(QPushButton):
   myCallback = QtCore.Signal(int)
@@ -57,6 +59,9 @@ class GameWindow(QWidget):
     self.__foo = foo
     self.__asset_root = asset_root
 
+    self.__ao_voice = QAudioOutput(parent=self)
+    self.__mp_voice = QMediaPlayer(parent=self, audioOutput=self.__ao_voice)
+
     self.__ui.pushButton_backToTitle.clicked.connect(self.__do_back_to_title)
 
     self.__executor.set_ask_choices_callback(self.__handle_ask_choices)
@@ -70,6 +75,9 @@ class GameWindow(QWidget):
       event_loop = self.__dialogue_wait_event_loop
       self.__dialogue_wait_event_loop = None
       event_loop.quit()
+
+    self.__mp_voice.stop()
+
     QWidget.closeEvent(self, event)
 
   @override
@@ -105,6 +113,19 @@ class GameWindow(QWidget):
   def __handle_show_dialogue_wait(self, name_tag: str, text: str, character_id: int, voice_id: int):
     self.__ui.label_nameTag.setText(name_tag)
     self.__ui.label_dialogueText.setText(text)
+
+    cv_div = 0
+    for n in self.__foo.cv_div[character_id]:
+      if voice_id < n:
+        break
+      cv_div += 1
+
+    voice_folder_name = f'CV{character_id:02}_{cv_div}' if cv_div > 0 else f'CV{character_id:02}'
+    voice_path = os.path.join(self.__asset_root, voice_folder_name, f'{voice_id:04}.ogg')
+    if os.path.exists(voice_path):
+      self.__mp_voice.setSource(QUrl.fromLocalFile(voice_path))
+      self.__mp_voice.play()
+
     if self.__dialogue_wait_event_loop is not None:
       raise RuntimeError
     self.__dialogue_wait_event_loop = QEventLoop(self)
