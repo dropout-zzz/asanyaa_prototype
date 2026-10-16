@@ -3,6 +3,8 @@ from ui_game_window import Ui_GameWindow
 from PySide6 import QtCore
 from script import ScriptExecutor
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton
+from PySide6.QtCore import QEventLoop
+from typing import override
 
 class ChoiceButton(QPushButton):
   myCallback = QtCore.Signal(int)
@@ -46,11 +48,21 @@ class GameWindow(QWidget):
 
     self.__tw = title_window
     self.__executor = script_executor
+    self.__dialogue_wait_event_loop: QEventLoop | None = None
 
     self.__ui.pushButton_backToTitle.clicked.connect(self.__do_back_to_title)
 
     self.__executor.set_ask_choices_callback(self.__handle_ask_choices)
     self.__executor.set_show_dialogue_wait_callback(self.__handle_show_dialogue_wait)
+
+  @override
+  def closeEvent(self, event):
+    self.__executor.stop()
+    if self.__dialogue_wait_event_loop is not None:
+      event_loop = self.__dialogue_wait_event_loop
+      self.__dialogue_wait_event_loop = None
+      event_loop.quit()
+    QWidget.closeEvent(self, event)
 
   def init(self):
     self.__executor.continue_execution()
@@ -71,4 +83,9 @@ class GameWindow(QWidget):
       return selected
 
   def __handle_show_dialogue_wait(self, name_tag: str, text: str, character_id: int, voice_id: int):
-    raise NotImplementedError
+    self.__ui.label_nameTag.setText(name_tag)
+    self.__ui.label_dialogueText.setText(text)
+    if self.__dialogue_wait_event_loop is not None:
+      raise RuntimeError
+    self.__dialogue_wait_event_loop = QEventLoop(self)
+    self.__dialogue_wait_event_loop.exec()

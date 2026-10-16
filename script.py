@@ -71,6 +71,7 @@ class ScriptExecutor:
     self.__current_instruction = instruction_pos
 
     self.__asset_root = asset_root
+    self.__want_stop = False
 
     self.__selection_prompt: str | None = None
     self.__choices: list[str] = []
@@ -111,6 +112,9 @@ class ScriptExecutor:
           else:
             self.__cb_show_dialogue_wait(name_tag, text, character_id, voice_id)
 
+      if self.__want_stop:
+        break
+
       self.__current_instruction += 1
       if self.__current_instruction == len(self.__current_script.instructions):
         desc = self.__current_act.script_map[(self.__current_script.script_id, self.__current_script.script_sub_id)]
@@ -134,3 +138,6 @@ class ScriptExecutor:
           self.__selection_prompt = None
           self.__choices.clear()
         self.__current_instruction = 0
+
+  def stop(self):
+    self.__want_stop = True
