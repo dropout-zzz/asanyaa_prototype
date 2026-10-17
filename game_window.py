@@ -75,6 +75,8 @@ class MovieWindow(QDialog):
     self.__mp.errorOccurred.connect(self.__handle_player_error)
     self.__mp.mediaStatusChanged.connect(self.__handle_player_media_status_change)
 
+    self.finished.connect(self.__handle_dialog_finished)
+
   @override
   def mousePressEvent(self, event: QMouseEvent):
     if self.__user_skippable and event.button() == Qt.MouseButton.LeftButton:
@@ -99,6 +101,10 @@ class MovieWindow(QDialog):
     match status:
       case QMediaPlayer.MediaStatus.EndOfMedia:
         self.accept()
+
+  @QtCore.Slot(int)
+  def __handle_dialog_finished(self, result: int):
+    self.__mp.stop()
 
   def begin_playback(self):
     self.__mp.play()
