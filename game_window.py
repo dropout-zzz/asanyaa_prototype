@@ -13,6 +13,7 @@ from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtCore import QUrl
 from utils import resolve_path_case_insensitive
 from script import PlayMovieFlag
+from PySide6.QtMultimediaWidgets import QVideoWidget
 
 class ChoiceButton(QPushButton):
   myCallback = QtCore.Signal(int)
@@ -47,6 +48,32 @@ class SelectionDialog(QDialog):
 
   def get_selected(self) -> int:
     return self.__selected
+
+class MovieWindow(QDialog):
+  def __init__(self, parent: QWidget, video_path: str):
+    QDialog.__init__(self, parent)
+    self.setWindowTitle('Movie')
+    self.resize(1280, 720)
+
+    self.__layout = QVBoxLayout()
+    self.__layout.setContentsMargins(0, 0, 0, 0)
+    self.__vw = QVideoWidget()
+    self.__vw.videoSink().videoSizeChanged.connect(self.__handle_video_size_change)
+    self.__layout.addWidget(self.__vw)
+    self.setLayout(self.__layout)
+
+    self.__ao = QAudioOutput(parent=self, volume=0.30)
+    self.__mp = QMediaPlayer(parent=self,
+                             audioOutput=self.__ao,
+                             videoOutput=self.__vw,
+                             source=QUrl.fromLocalFile(video_path))
+
+  @QtCore.Slot()
+  def __handle_video_size_change(self):
+    self.resize(self.__vw.videoSink().videoSize())
+
+  def begin_playback(self):
+    self.__mp.play()
 
 class GameWindow(QWidget):
   def __init__(self, title_window: QWidget, script_executor: ScriptExecutor, foo: Foo, asset_root: str):
@@ -192,4 +219,9 @@ class GameWindow(QWidget):
     self.__mp_sfx.stop()
 
   def __handle_play_movie(self, movie_id: int, play_movie_flags: PlayMovieFlag):
-    pass
+    movie_file_name = self.__foo.movie_tbl.rows[movie_id][0]
+    movie_path = resolve_path_case_insensitive(self.__asset_root, movie_file_name)
+
+    dlg = MovieWindow(self, movie_path)
+    dlg.begin_playback()
+    dlg.exec()
