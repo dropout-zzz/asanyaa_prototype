@@ -70,7 +70,9 @@ class MovieWindow(QDialog):
                              audioOutput=self.__ao,
                              videoOutput=self.__vw,
                              source=QUrl.fromLocalFile(video_path))
+
     self.__mp.errorOccurred.connect(self.__handle_player_error)
+    self.__mp.mediaStatusChanged.connect(self.__handle_player_media_status_change)
 
   @QtCore.Slot()
   def __handle_video_size_change(self):
@@ -82,6 +84,12 @@ class MovieWindow(QDialog):
                         self.__foo.system_messages.strings['errSystemError'],
                         self.__foo.system_messages.strings['mvLoadFailure'])
     self.reject()
+
+  @QtCore.Slot(QMediaPlayer.MediaStatus)
+  def __handle_player_media_status_change(self, status: QMediaPlayer.MediaStatus):
+    match status:
+      case QMediaPlayer.MediaStatus.EndOfMedia:
+        self.accept()
 
   def begin_playback(self):
     self.__mp.play()
