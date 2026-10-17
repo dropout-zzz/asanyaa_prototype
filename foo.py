@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from table import load_table, Table
 import re
 from utils import resolve_path_case_insensitive
+from system_messages import SystemMessageTable, load_system_messages
 
 @dataclass
 class Foo:
@@ -11,6 +12,7 @@ class Foo:
   cv_div: dict[int, list[int]]
   bgm_tbl: Table
   se_tbl: Table
+  system_messages: SystemMessageTable
 
 def foo_init(asset_root: str) -> Foo:
   tmp = {}
@@ -28,5 +30,7 @@ def foo_init(asset_root: str) -> Foo:
 
   tmp['bgm_tbl'] = load_table(asset_root, 'bgm')
   tmp['se_tbl'] = load_table(asset_root, 'se')
+
+  tmp['system_messages'] = load_system_messages(asset_root)
 
   return Foo(**tmp)
