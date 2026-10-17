@@ -5,15 +5,13 @@ import dataclasses
 import string
 import io
 import sys
-from act import Act
-from act import ScriptType
-from act import load_act
-from enum import IntEnum
+from enum import IntEnum, Flag
+import enum
 import struct
 import re
+
+from act import Act, ScriptType, load_act
 from utils import resolve_path_case_insensitive
-from enum import Flag
-import enum
 
 @dataclass
 class Instruction:

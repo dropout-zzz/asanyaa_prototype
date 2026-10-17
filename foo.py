@@ -1,8 +1,9 @@
 # preloaded global game resources
 
 from dataclasses import dataclass
-from table import load_table, Table
 import re
+
+from table import load_table, Table
 from utils import resolve_path_case_insensitive
 from system_messages import SystemMessageTable, load_system_messages
 

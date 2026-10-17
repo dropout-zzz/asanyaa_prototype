@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
-from PySide6.QtWidgets import QApplication
-from title import TitleForm
 import argparse
-from foo import foo_init
 import os.path
+
+from PySide6.QtWidgets import QApplication
+
+from title import TitleForm
+from foo import foo_init
 
 def main():
   ap = argparse.ArgumentParser()

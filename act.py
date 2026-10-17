@@ -7,6 +7,7 @@ import io
 import sys
 import struct
 import enum
+
 from utils import resolve_path_case_insensitive
 
 class ScriptType(enum.IntEnum):

@@ -1,20 +1,22 @@
-from PySide6.QtWidgets import QWidget
-from ui_game_window import Ui_GameWindow
-from PySide6 import QtCore
-from script import ScriptExecutor
-from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton
-from PySide6.QtCore import QEventLoop
 from typing import override
-from PySide6.QtGui import QMouseEvent
-from PySide6.QtCore import Qt
-from foo import Foo
-from PySide6.QtGui import QPixmap
+
+from PySide6 import QtCore
+from PySide6.QtCore import Qt, QEventLoop, QUrl
+from PySide6.QtGui import QMouseEvent, QPixmap
+from PySide6.QtWidgets import (QWidget,
+                               QDialog,
+                               QVBoxLayout,
+                               QLabel,
+                               QPushButton,
+                               QMessageBox)
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
-from PySide6.QtCore import QUrl
-from utils import resolve_path_case_insensitive
-from script import PlayMovieFlag
 from PySide6.QtMultimediaWidgets import QVideoWidget
-from PySide6.QtWidgets import QMessageBox
+
+from ui_game_window import Ui_GameWindow
+
+from script import ScriptExecutor, PlayMovieFlag
+from foo import Foo
+from utils import resolve_path_case_insensitive
 
 class ChoiceButton(QPushButton):
   myCallback = QtCore.Signal(int)

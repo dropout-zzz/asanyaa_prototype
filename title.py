@@ -1,10 +1,11 @@
-from PySide6.QtWidgets import QWidget, QApplication
-from ui_title import Ui_TitleForm
 from PySide6 import QtCore
+from PySide6.QtWidgets import QWidget, QApplication
+
+from ui_title import Ui_TitleForm
+
 from game_window import GameWindow
 from act import load_act
-from script import load_script
-from script import ScriptExecutor
+from script import load_script, ScriptExecutor
 from foo import Foo
 
 class TitleForm(QWidget):
