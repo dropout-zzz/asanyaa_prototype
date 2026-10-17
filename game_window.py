@@ -51,7 +51,7 @@ class SelectionDialog(QDialog):
     return self.__selected
 
 class MovieWindow(QDialog):
-  def __init__(self, parent: QWidget, video_path: str, foo: Foo):
+  def __init__(self, parent: QWidget, video_path: str, foo: Foo, user_skippable: bool = True):
     QDialog.__init__(self, parent)
     self.setWindowTitle('Movie')
     self.resize(1280, 720)
@@ -64,6 +64,7 @@ class MovieWindow(QDialog):
     self.setLayout(self.__layout)
 
     self.__foo = foo
+    self.__user_skippable = user_skippable
 
     self.__ao = QAudioOutput(parent=self, volume=0.30)
     self.__mp = QMediaPlayer(parent=self,
@@ -73,6 +74,14 @@ class MovieWindow(QDialog):
 
     self.__mp.errorOccurred.connect(self.__handle_player_error)
     self.__mp.mediaStatusChanged.connect(self.__handle_player_media_status_change)
+
+  @override
+  def mousePressEvent(self, event: QMouseEvent):
+    if self.__user_skippable and event.button() == Qt.MouseButton.LeftButton:
+      event.accept()
+      self.accept()
+      return
+    QDialog.mousePressEvent(self, event)
 
   @QtCore.Slot()
   def __handle_video_size_change(self):
@@ -241,6 +250,6 @@ class GameWindow(QWidget):
     movie_file_name = self.__foo.movie_tbl.rows[movie_id][0]
     movie_path = resolve_path_case_insensitive(self.__asset_root, movie_file_name)
 
-    dlg = MovieWindow(self, movie_path, self.__foo)
+    dlg = MovieWindow(self, movie_path, self.__foo, PlayMovieFlag.USER_UNSKIPPABLE in play_movie_flags)
     dlg.begin_playback()
     dlg.exec()
