@@ -54,6 +54,10 @@ def load_script(asset_root: str, letter: str, script_id: int, script_sub_id: int
 
 class Opcode(IntEnum):
   DIALOGUE = 0x01
+  PLAY_BGM = 0x06
+  FADE_IN_BGM = 0x07
+  FADE_OUT_BGM = 0x08
+  STOP_BGM = 0x09
   CHANGE_FACE_CG = 0x2a
 
 _UNESCAPES: dict[str, str] = {r'\n': '\n', '&heart;': '❤'}
@@ -88,6 +92,11 @@ class ScriptExecutor:
     self.__cb_show_dialogue_wait = None
     self.__cb_set_face_cg = None
 
+    self.__cb_play_bgm = None
+    self.__cb_fade_in_bgm = None
+    self.__cb_fade_out_bgm = None
+    self.__cb_stop_bgm = None
+
   def set_ask_choices_callback(self, fn):
     self.__cb_ask_choices = fn
 
@@ -96,6 +105,18 @@ class ScriptExecutor:
 
   def set_set_face_cg_callback(self, fn):
     self.__cb_set_face_cg = fn
+
+  def set_play_bgm_callback(self, fn):
+    self.__cb_play_bgm = fn
+
+  def set_fade_in_bgm_callback(self, fn):
+    self.__cb_fade_in_bgm = fn
+
+  def set_fade_out_bgm_callback(self, fn):
+    self.__cb_fade_out_bgm = fn
+
+  def set_stop_bgm_callback(self, fn):
+    self.__cb_stop_bgm = fn
 
   def continue_execution(self):
     while True:
@@ -127,6 +148,20 @@ class ScriptExecutor:
         case Opcode.CHANGE_FACE_CG:
           cg_index = int.from_bytes(inst.arguments[-4:], sys.byteorder, signed=True)
           self.__cb_set_face_cg(cg_index)
+
+        case Opcode.PLAY_BGM:
+          background_music_id = int.from_bytes(inst.arguments[-4:], sys.byteorder)
+          self.__cb_play_bgm(background_music_id)
+
+        case Opcode.FADE_IN_BGM:
+          background_music_id = int.from_bytes(inst.arguments[-4:], sys.byteorder)
+          self.__cb_fade_in_bgm(background_music_id)
+
+        case Opcode.FADE_OUT_BGM:
+          self.__cb_fade_out_bgm()
+
+        case Opcode.STOP_BGM:
+          self.__cb_stop_bgm()
 
       if self.__want_stop:
         break

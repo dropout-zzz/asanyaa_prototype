@@ -68,6 +68,11 @@ class GameWindow(QWidget):
     self.__executor.set_show_dialogue_wait_callback(self.__handle_show_dialogue_wait)
     self.__executor.set_set_face_cg_callback(self.__handle_set_face_cg)
 
+    self.__executor.set_play_bgm_callback(self.__handle_play_bgm)
+    self.__executor.set_fade_in_bgm_callback(self.__handle_fade_in_bgm)
+    self.__executor.set_fade_out_bgm_callback(self.__handle_fade_out_bgm)
+    self.__executor.set_stop_bgm_callback(self.__handle_stop_bgm)
+
   @override
   def closeEvent(self, event):
     self.__executor.stop()
@@ -139,3 +144,15 @@ class GameWindow(QWidget):
     fcg_name = self.__foo.bmp_tbl.rows[cg_index][0].removesuffix('.kg')
     file_path = os.path.join(self.__asset_root, 'FCG', f'{fcg_name}.png')
     self.__ui.label_faceImageArea.setPixmap(QPixmap(file_path, format='PNG'))
+
+  def __handle_play_bgm(self, background_music_id: int):
+    pass
+
+  def __handle_fade_in_bgm(self, background_music_id: int):
+    pass
+
+  def __handle_fade_out_bgm(self):
+    pass
+
+  def __handle_stop_bgm(self):
+    pass
