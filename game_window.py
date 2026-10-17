@@ -120,7 +120,7 @@ class GameWindow(QWidget):
     self.__ui.label_dialogueText.setText(text)
 
     cv_div = 0
-    for n in self.__foo.cv_div[character_id]:
+    for n in self.__foo.cv_div.get(character_id, []):
       if voice_id < n:
         break
       cv_div += 1
