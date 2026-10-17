@@ -58,6 +58,9 @@ class Opcode(IntEnum):
   FADE_IN_BGM = 0x07
   FADE_OUT_BGM = 0x08
   STOP_BGM = 0x09
+  PLAY_SFX = 0x0a
+  PLAY_SFX_LOOP = 0x0b
+  FADE_OUT_SFX = 0x0d
   CHANGE_FACE_CG = 0x2a
 
 _UNESCAPES: dict[str, str] = {r'\n': '\n', '&heart;': '❤'}
@@ -97,6 +100,10 @@ class ScriptExecutor:
     self.__cb_fade_out_bgm = None
     self.__cb_stop_bgm = None
 
+    self.__cb_play_sfx = None
+    self.__cb_play_sfx_loop = None
+    self.__cb_fade_out_sfx = None
+
   def set_ask_choices_callback(self, fn):
     self.__cb_ask_choices = fn
 
@@ -117,6 +124,15 @@ class ScriptExecutor:
 
   def set_stop_bgm_callback(self, fn):
     self.__cb_stop_bgm = fn
+
+  def set_play_sfx_callback(self, fn):
+    self.__cb_play_sfx = fn
+
+  def set_play_sfx_loop_callback(self, fn):
+    self.__cb_play_sfx_loop = fn
+
+  def set_fade_out_sfx(self, fn):
+    self.__cb_fade_out_sfx = fn
 
   def continue_execution(self):
     while True:
@@ -162,6 +178,17 @@ class ScriptExecutor:
 
         case Opcode.STOP_BGM:
           self.__cb_stop_bgm()
+
+        case Opcode.PLAY_SFX:
+          sound_effect_id = int.from_bytes(inst.arguments[-4:], sys.byteorder)
+          self.__cb_play_sfx(sound_effect_id)
+
+        case Opcode.PLAY_SFX_LOOP:
+          sound_effect_id = int.from_bytes(inst.arguments[-4:], sys.byteorder)
+          self.__cb_play_sfx_loop(sound_effect_id)
+
+        case Opcode.FADE_OUT_SFX:
+          self.__cb_fade_out_sfx()
 
       if self.__want_stop:
         break

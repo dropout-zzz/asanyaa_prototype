@@ -76,6 +76,10 @@ class GameWindow(QWidget):
     self.__executor.set_fade_out_bgm_callback(self.__handle_stop_bgm)
     self.__executor.set_stop_bgm_callback(self.__handle_stop_bgm)
 
+    self.__executor.set_play_sfx_callback(self.__handle_play_sfx)
+    self.__executor.set_play_sfx_loop_callback(self.__handle_play_sfx_loop)
+    self.__executor.set_fade_out_sfx(self.__handle_fade_out_sfx)
+
   @override
   def closeEvent(self, event):
     self.__executor.stop()
@@ -157,3 +161,12 @@ class GameWindow(QWidget):
 
   def __handle_stop_bgm(self):
     self.__mp_bgm.stop()
+
+  def __handle_play_sfx(self, sound_effect_id: int):
+    pass
+
+  def __handle_play_sfx_loop(self, sound_effect_id: int):
+    pass
+
+  def __handle_fade_out_sfx(self):
+    pass
