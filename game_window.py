@@ -64,7 +64,9 @@ class GameWindow(QWidget):
     self.__mp_voice = QMediaPlayer(parent=self, audioOutput=self.__ao_voice)
 
     self.__ao_bgm = QAudioOutput(parent=self, volume=0.20)
-    self.__mp_bgm = QMediaPlayer(parent=self, audioOutput=self.__ao_bgm, loops=QMediaPlayer.Loops.Infinite)
+    self.__mp_bgm = QMediaPlayer(parent=self,
+                                 audioOutput=self.__ao_bgm,
+                                 loops=QMediaPlayer.Loops.Infinite)
 
     self.__ao_sfx = QAudioOutput(parent=self, volume=0.50)
     self.__mp_sfx = QMediaPlayer(parent=self, audioOutput=self.__ao_sfx)
