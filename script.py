@@ -61,6 +61,7 @@ class Opcode(IntEnum):
   PLAY_SFX = 0x0a
   PLAY_SFX_LOOP = 0x0b
   FADE_OUT_SFX = 0x0d
+  PLAY_MOVIE = 0x0f
   CHANGE_FACE_CG = 0x2a
 
 _UNESCAPES: dict[str, str] = {r'\n': '\n', '&heart;': '❤'}
@@ -104,6 +105,8 @@ class ScriptExecutor:
     self.__cb_play_sfx_loop = None
     self.__cb_fade_out_sfx = None
 
+    self.__cb_play_movie = None
+
   def set_ask_choices_callback(self, fn):
     self.__cb_ask_choices = fn
 
@@ -133,6 +136,9 @@ class ScriptExecutor:
 
   def set_fade_out_sfx(self, fn):
     self.__cb_fade_out_sfx = fn
+
+  def set_play_movie_callback(self, fn):
+    self.__cb_play_movie = fn
 
   def continue_execution(self):
     while True:
@@ -189,6 +195,10 @@ class ScriptExecutor:
 
         case Opcode.FADE_OUT_SFX:
           self.__cb_fade_out_sfx()
+
+        case Opcode.PLAY_MOVIE:
+          movie_id = int.from_bytes(inst.arguments[-4:], sys.byteorder)
+          self.__cb_play_movie(movie_id)
 
       if self.__want_stop:
         break

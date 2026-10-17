@@ -83,6 +83,8 @@ class GameWindow(QWidget):
     self.__executor.set_play_sfx_loop_callback(self.__handle_play_sfx_loop)
     self.__executor.set_fade_out_sfx(self.__handle_fade_out_sfx)
 
+    self.__executor.set_play_movie_callback(self.__handle_play_movie)
+
   @override
   def closeEvent(self, event):
     self.__executor.stop()
@@ -185,3 +187,6 @@ class GameWindow(QWidget):
 
   def __handle_fade_out_sfx(self):
     self.__mp_sfx.stop()
+
+  def __handle_play_movie(self, movie_id: int):
+    pass
