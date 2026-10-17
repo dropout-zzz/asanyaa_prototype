@@ -3,7 +3,6 @@
 from dataclasses import dataclass
 import dataclasses
 import string
-import os.path
 import io
 import sys
 from act import Act
@@ -12,6 +11,7 @@ from act import load_act
 from enum import IntEnum
 import struct
 import re
+from utils import resolve_path_case_insensitive
 
 @dataclass
 class Instruction:
@@ -36,7 +36,7 @@ def load_script(asset_root: str, letter: str, script_id: int, script_sub_id: int
   script.script_id = script_id
   script.script_sub_id = script_sub_id
 
-  with open(os.path.join(asset_root, 'data', f'{letter}{script_id:04}_{script_sub_id:02}.spt'), 'rb') as f:
+  with open(resolve_path_case_insensitive(asset_root, 'data', f'{letter}{script_id:04}_{script_sub_id:02}.spt'), 'rb') as f:
     with io.BytesIO(f.read()) as buf:
       n_instruction = int.from_bytes(buf.read(4), sys.byteorder)
       if len(buf.getbuffer()) != 4 + n_instruction * 32:

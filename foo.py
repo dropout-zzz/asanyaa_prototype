@@ -2,8 +2,8 @@
 
 from dataclasses import dataclass
 from table import load_table, Table
-import os.path
 import re
+from utils import resolve_path_case_insensitive
 
 @dataclass
 class Foo:
@@ -17,7 +17,7 @@ def foo_init(asset_root: str) -> Foo:
 
   tmp['bmp_tbl'] = load_table(asset_root, 'bmp')
 
-  with open(os.path.join(asset_root, 'data', 'cvdiv.txt'), 'r') as f:
+  with open(resolve_path_case_insensitive(asset_root, 'data', 'cvdiv.txt'), 'r') as f:
     tmp['cv_div'] = {}
 
     for row in f.read().split('\n'):

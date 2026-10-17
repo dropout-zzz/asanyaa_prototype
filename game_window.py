@@ -8,10 +8,10 @@ from typing import override
 from PySide6.QtGui import QMouseEvent
 from PySide6.QtCore import Qt
 from foo import Foo
-import os.path
 from PySide6.QtGui import QPixmap
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtCore import QUrl
+from utils import resolve_path_case_insensitive
 
 class ChoiceButton(QPushButton):
   myCallback = QtCore.Signal(int)
@@ -138,8 +138,11 @@ class GameWindow(QWidget):
       cv_div += 1
 
     voice_folder_name = f'CV{character_id:02}_{cv_div}' if cv_div > 0 else f'CV{character_id:02}'
-    voice_path = os.path.join(self.__asset_root, voice_folder_name, f'{voice_id:04}.ogg')
-    if os.path.exists(voice_path):
+    try:
+      voice_path = resolve_path_case_insensitive(self.__asset_root, voice_folder_name, f'{voice_id:04}.ogg')
+    except FileNotFoundError:
+      pass
+    else:
       self.__mp_voice.setSource(QUrl.fromLocalFile(voice_path))
       self.__mp_voice.play()
 
@@ -154,12 +157,12 @@ class GameWindow(QWidget):
       return
 
     fcg_name = self.__foo.bmp_tbl.rows[cg_index][0].removesuffix('.kg')
-    file_path = os.path.join(self.__asset_root, 'FCG', f'{fcg_name}.png')
+    file_path = resolve_path_case_insensitive(self.__asset_root, 'FCG', f'{fcg_name}.png')
     self.__ui.label_faceImageArea.setPixmap(QPixmap(file_path, format='PNG'))
 
   def __handle_play_bgm(self, background_music_id: int):
     bgm_name = self.__foo.bgm_tbl.rows[background_music_id][0]
-    bgm_path = os.path.join(self.__asset_root, 'BGM', bgm_name)
+    bgm_path = resolve_path_case_insensitive(self.__asset_root, 'BGM', bgm_name)
     self.__mp_bgm.setSource(QUrl.fromLocalFile(bgm_path))
     self.__mp_bgm.play()
 
@@ -168,7 +171,7 @@ class GameWindow(QWidget):
 
   def __construct_sfx_path(self, sound_effect_id: int) -> str:
     sfx_name = self.__foo.se_tbl.rows[sound_effect_id][0]
-    return os.path.join(self.__asset_root, 'SE', sfx_name)
+    return resolve_path_case_insensitive(self.__asset_root, 'SE', sfx_name)
 
   def __handle_play_sfx(self, sound_effect_id: int):
     self.__mp_sfx.setSource(QUrl.fromLocalFile(self.__construct_sfx_path(sound_effect_id)))
