@@ -34,6 +34,15 @@
      <height>201</height>
     </rect>
    </property>
+   <property name="styleSheet">
+    <string notr="true">QWidget#widget_messageArea {
+    background-color: rgba(255, 255, 255, 50%);
+}
+
+QLabel#label_dialogueText, QLabel#label_nameTag {
+    color: black;
+}</string>
+   </property>
    <widget class="QPushButton" name="pushButton_backToTitle">
     <property name="geometry">
      <rect>
