@@ -20,10 +20,7 @@ def foo_init(asset_root: str) -> Foo:
   with open(resolve_path_case_insensitive(asset_root, 'data', 'cvdiv.txt'), 'r') as f:
     tmp['cv_div'] = {}
 
-    for row in f.read().split('\n'):
-      if len(row) == 0:
-        continue
-
+    for row in f.read().removesuffix('\n').split('\n'):
       character_id, *n = map(int, re.findall(r'\d+', row))
       if character_id in tmp['cv_div']:
         raise ValueError('duplicate character id')
