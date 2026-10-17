@@ -62,6 +62,9 @@ class GameWindow(QWidget):
     self.__ao_voice = QAudioOutput(parent=self)
     self.__mp_voice = QMediaPlayer(parent=self, audioOutput=self.__ao_voice)
 
+    self.__ao_bgm = QAudioOutput(parent=self, volume=0.20)
+    self.__mp_bgm = QMediaPlayer(parent=self, audioOutput=self.__ao_bgm, loops=QMediaPlayer.Loops.Infinite)
+
     self.__ui.pushButton_backToTitle.clicked.connect(self.__do_back_to_title)
 
     self.__executor.set_ask_choices_callback(self.__handle_ask_choices)
@@ -69,8 +72,8 @@ class GameWindow(QWidget):
     self.__executor.set_set_face_cg_callback(self.__handle_set_face_cg)
 
     self.__executor.set_play_bgm_callback(self.__handle_play_bgm)
-    self.__executor.set_fade_in_bgm_callback(self.__handle_fade_in_bgm)
-    self.__executor.set_fade_out_bgm_callback(self.__handle_fade_out_bgm)
+    self.__executor.set_fade_in_bgm_callback(self.__handle_play_bgm)
+    self.__executor.set_fade_out_bgm_callback(self.__handle_stop_bgm)
     self.__executor.set_stop_bgm_callback(self.__handle_stop_bgm)
 
   @override
@@ -82,6 +85,7 @@ class GameWindow(QWidget):
       event_loop.quit()
 
     self.__mp_voice.stop()
+    self.__mp_bgm.stop()
 
     QWidget.closeEvent(self, event)
 
@@ -146,13 +150,10 @@ class GameWindow(QWidget):
     self.__ui.label_faceImageArea.setPixmap(QPixmap(file_path, format='PNG'))
 
   def __handle_play_bgm(self, background_music_id: int):
-    pass
-
-  def __handle_fade_in_bgm(self, background_music_id: int):
-    pass
-
-  def __handle_fade_out_bgm(self):
-    pass
+    bgm_name = self.__foo.bgm_tbl.rows[background_music_id][0]
+    bgm_path = os.path.join(self.__asset_root, 'BGM', bgm_name)
+    self.__mp_bgm.setSource(QUrl.fromLocalFile(bgm_path))
+    self.__mp_bgm.play()
 
   def __handle_stop_bgm(self):
-    pass
+    self.__mp_bgm.stop()
