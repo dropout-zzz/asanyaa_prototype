@@ -23,6 +23,7 @@ class Script:
   letter: str = 'A'
   script_id: int = 0
   script_sub_id: int = 0
+
   instructions: list[Instruction] = dataclasses.field(default_factory=list)
 
 def load_script(asset_root: str,
@@ -61,13 +62,18 @@ def load_script(asset_root: str,
 
 class Opcode(IntEnum):
   DIALOGUE = 0x01
+
+  # -- background music
   PLAY_BGM = 0x06
   FADE_IN_BGM = 0x07
   FADE_OUT_BGM = 0x08
   STOP_BGM = 0x09
+
+  # -- sound effects
   PLAY_SFX = 0x0a
   PLAY_SFX_LOOP = 0x0b
   FADE_OUT_SFX = 0x0d
+
   PLAY_MOVIE = 0x0f
   SKIP_TO_NEXT_SCRIPT = 0x24
   CHANGE_FACE_CG = 0x2a
@@ -107,6 +113,8 @@ class ScriptExecutor:
     self.__selection_prompt: str | None = None
     self.__choices: list[str] = []
 
+    # --- callbacks start ---
+
     self.__cb_ask_choices = None
     self.__cb_show_dialogue_wait = None
     self.__cb_set_face_cg = None
@@ -122,6 +130,10 @@ class ScriptExecutor:
 
     self.__cb_play_movie = None
 
+    # --- callbacks end ---
+
+  # --- callback setters start ---
+
   def set_ask_choices_callback(self, fn):
     self.__cb_ask_choices = fn
 
@@ -130,6 +142,8 @@ class ScriptExecutor:
 
   def set_set_face_cg_callback(self, fn):
     self.__cb_set_face_cg = fn
+
+  #   --- bgm callbacks start ---
 
   def set_play_bgm_callback(self, fn):
     self.__cb_play_bgm = fn
@@ -143,6 +157,10 @@ class ScriptExecutor:
   def set_stop_bgm_callback(self, fn):
     self.__cb_stop_bgm = fn
 
+  #   --- bgm callbacks end ---
+
+  #   --- sfx callbacks start ---
+
   def set_play_sfx_callback(self, fn):
     self.__cb_play_sfx = fn
 
@@ -152,8 +170,14 @@ class ScriptExecutor:
   def set_fade_out_sfx(self, fn):
     self.__cb_fade_out_sfx = fn
 
+  #   --- sfx callbacks end ---
+
   def set_play_movie_callback(self, fn):
     self.__cb_play_movie = fn
+
+  # --- callback setters end ---
+
+  # --- public methods start ---
 
   def continue_execution(self):
     while True:
@@ -187,6 +211,8 @@ class ScriptExecutor:
           cg_index = int.from_bytes(inst.arguments[-4:], sys.byteorder, signed=True)
           self.__cb_set_face_cg(cg_index)
 
+        # -- bgm instructions start --
+
         case Opcode.PLAY_BGM:
           background_music_id = int.from_bytes(inst.arguments[-4:], sys.byteorder)
           self.__cb_play_bgm(background_music_id)
@@ -201,6 +227,10 @@ class ScriptExecutor:
         case Opcode.STOP_BGM:
           self.__cb_stop_bgm()
 
+        # --- bgm instructions end ---
+
+        # --- sfx instructions start ---
+
         case Opcode.PLAY_SFX:
           sound_effect_id = int.from_bytes(inst.arguments[-4:], sys.byteorder)
           self.__cb_play_sfx(sound_effect_id)
@@ -211,6 +241,8 @@ class ScriptExecutor:
 
         case Opcode.FADE_OUT_SFX:
           self.__cb_fade_out_sfx()
+
+        # --- sfx instructions end ---
 
         case Opcode.PLAY_MOVIE:
           with io.BytesIO(inst.arguments) as buf:

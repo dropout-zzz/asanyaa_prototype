@@ -9,17 +9,23 @@ from system_messages import SystemMessageTable, load_system_messages
 
 @dataclass
 class Foo:
+  # -- tables
   bmp_tbl: Table
-  cv_div: dict[int, list[int]]
   bgm_tbl: Table
   se_tbl: Table
-  system_messages: SystemMessageTable
   movie_tbl: Table
+
+  cv_div: dict[int, list[int]]
+  system_messages: SystemMessageTable
 
 def foo_init(asset_root: str) -> Foo:
   tmp = {}
 
+  # -- tables
   tmp['bmp_tbl'] = load_table(asset_root, 'bmp')
+  tmp['bgm_tbl'] = load_table(asset_root, 'bgm')
+  tmp['se_tbl'] = load_table(asset_root, 'se')
+  tmp['movie_tbl'] = load_table(asset_root, 'movie')
 
   with open(resolve_path_case_insensitive(asset_root,
                                           'data',
@@ -32,11 +38,6 @@ def foo_init(asset_root: str) -> Foo:
         raise ValueError('duplicate character id')
       tmp['cv_div'][character_id] = n
 
-  tmp['bgm_tbl'] = load_table(asset_root, 'bgm')
-  tmp['se_tbl'] = load_table(asset_root, 'se')
-
   tmp['system_messages'] = load_system_messages(asset_root)
-
-  tmp['movie_tbl'] = load_table(asset_root, 'movie')
 
   return Foo(**tmp)
