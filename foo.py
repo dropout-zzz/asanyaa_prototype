@@ -13,6 +13,7 @@ class Foo:
   bgm_tbl: Table
   se_tbl: Table
   system_messages: SystemMessageTable
+  movie_tbl: Table
 
 def foo_init(asset_root: str) -> Foo:
   tmp = {}
@@ -32,5 +33,7 @@ def foo_init(asset_root: str) -> Foo:
   tmp['se_tbl'] = load_table(asset_root, 'se')
 
   tmp['system_messages'] = load_system_messages(asset_root)
+
+  tmp['movie_tbl'] = load_table(asset_root, 'movie')
 
   return Foo(**tmp)
