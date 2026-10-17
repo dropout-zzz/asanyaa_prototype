@@ -9,6 +9,7 @@ import re
 class Foo:
   bmp_tbl: Table
   cv_div: dict[int, list[int]]
+  bgm_tbl: Table
 
 def foo_init(asset_root: str) -> Foo:
   tmp = {}
@@ -26,5 +27,7 @@ def foo_init(asset_root: str) -> Foo:
       if character_id in tmp['cv_div']:
         raise ValueError('duplicate character id')
       tmp['cv_div'][character_id] = n
+
+  tmp['bgm_tbl'] = load_table(asset_root, 'bgm')
 
   return Foo(**tmp)
