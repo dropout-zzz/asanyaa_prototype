@@ -12,6 +12,8 @@ from enum import IntEnum
 import struct
 import re
 from utils import resolve_path_case_insensitive
+from enum import Flag
+import enum
 
 @dataclass
 class Instruction:
@@ -69,6 +71,9 @@ _ESCAPES = re.compile('|'.join(map(re.escape, _UNESCAPES.keys())))
 
 def _get_unescaped(m: re.Match) -> str:
   return _UNESCAPES[m.group(0)]
+
+class PlayMovieFlag(Flag):
+  USER_UNSKIPPABLE = enum.auto()
 
 class ScriptExecutor:
   def __init__(self, act: Act, script: Script, instruction_pos: int, asset_root: str):
@@ -197,8 +202,17 @@ class ScriptExecutor:
           self.__cb_fade_out_sfx()
 
         case Opcode.PLAY_MOVIE:
-          movie_id = int.from_bytes(inst.arguments[-4:], sys.byteorder)
-          self.__cb_play_movie(movie_id)
+          with io.BytesIO(inst.arguments) as buf:
+            buf.read(8)  # skip unk1
+            flags = int.from_bytes(buf.read(4), sys.byteorder)
+
+            play_movie_flags = PlayMovieFlag(0)
+
+            if flags & 0b1:
+              play_movie_flags |= PlayMovieFlag.USER_UNSKIPPABLE
+
+            movie_id = int.from_bytes(inst.arguments[-4:], sys.byteorder)
+            self.__cb_play_movie(movie_id, play_movie_flags)
 
       if self.__want_stop:
         break

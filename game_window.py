@@ -12,6 +12,7 @@ from PySide6.QtGui import QPixmap
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtCore import QUrl
 from utils import resolve_path_case_insensitive
+from script import PlayMovieFlag
 
 class ChoiceButton(QPushButton):
   myCallback = QtCore.Signal(int)
@@ -188,5 +189,5 @@ class GameWindow(QWidget):
   def __handle_fade_out_sfx(self):
     self.__mp_sfx.stop()
 
-  def __handle_play_movie(self, movie_id: int):
+  def __handle_play_movie(self, movie_id: int, play_movie_flags: PlayMovieFlag):
     pass
