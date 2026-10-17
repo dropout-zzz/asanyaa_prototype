@@ -64,6 +64,7 @@ class Opcode(IntEnum):
   PLAY_SFX_LOOP = 0x0b
   FADE_OUT_SFX = 0x0d
   PLAY_MOVIE = 0x0f
+  SKIP_TO_NEXT_SCRIPT = 0x24
   CHANGE_FACE_CG = 0x2a
 
 _UNESCAPES: dict[str, str] = {r'\n': '\n', '&heart;': '❤'}
@@ -218,7 +219,7 @@ class ScriptExecutor:
         break
 
       self.__current_instruction += 1
-      if self.__current_instruction == len(self.__current_script.instructions):
+      if self.__current_instruction == len(self.__current_script.instructions) or inst.opcode == Opcode.SKIP_TO_NEXT_SCRIPT:
         desc = self.__current_act.script_map[(self.__current_script.script_id, self.__current_script.script_sub_id)]
         if desc.next_script_letter != self.__current_act.letter:
           self.__current_act = load_act(self.__asset_root, desc.next_script_letter)
