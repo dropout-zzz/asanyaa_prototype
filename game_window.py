@@ -65,6 +65,9 @@ class GameWindow(QWidget):
     self.__ao_bgm = QAudioOutput(parent=self, volume=0.20)
     self.__mp_bgm = QMediaPlayer(parent=self, audioOutput=self.__ao_bgm, loops=QMediaPlayer.Loops.Infinite)
 
+    self.__ao_sfx = QAudioOutput(parent=self, volume=0.50)
+    self.__mp_sfx = QMediaPlayer(parent=self, audioOutput=self.__ao_sfx)
+
     self.__ui.pushButton_backToTitle.clicked.connect(self.__do_back_to_title)
 
     self.__executor.set_ask_choices_callback(self.__handle_ask_choices)
@@ -90,6 +93,7 @@ class GameWindow(QWidget):
 
     self.__mp_voice.stop()
     self.__mp_bgm.stop()
+    self.__mp_sfx.stop()
 
     QWidget.closeEvent(self, event)
 
@@ -162,11 +166,19 @@ class GameWindow(QWidget):
   def __handle_stop_bgm(self):
     self.__mp_bgm.stop()
 
+  def __construct_sfx_path(self, sound_effect_id: int) -> str:
+    sfx_name = self.__foo.se_tbl.rows[sound_effect_id][0]
+    return os.path.join(self.__asset_root, 'SE', sfx_name)
+
   def __handle_play_sfx(self, sound_effect_id: int):
-    pass
+    self.__mp_sfx.setSource(QUrl.fromLocalFile(self.__construct_sfx_path(sound_effect_id)))
+    self.__mp_sfx.setLoops(QMediaPlayer.Loops.Once)
+    self.__mp_sfx.play()
 
   def __handle_play_sfx_loop(self, sound_effect_id: int):
-    pass
+    self.__mp_sfx.setSource(QUrl.fromLocalFile(self.__construct_sfx_path(sound_effect_id)))
+    self.__mp_sfx.setLoops(QMediaPlayer.Loops.Infinite)
+    self.__mp_sfx.play()
 
   def __handle_fade_out_sfx(self):
-    pass
+    self.__mp_sfx.stop()
