@@ -170,6 +170,7 @@ class GameWindow(QWidget):
     self.__executor.set_fade_out_sfx(self.__handle_fade_out_sfx)
 
     self.__executor.set_play_movie_callback(self.__handle_play_movie)
+    self.__executor.set_switch_background_callback(self.__handle_switch_background)
 
     # --- register callbacks end ---
 
@@ -318,3 +319,8 @@ class GameWindow(QWidget):
                       PlayMovieFlag.USER_UNSKIPPABLE in play_movie_flags)
     dlg.begin_playback()
     dlg.exec()
+
+  def __handle_switch_background(self, cg_index: int, transition_effect_id: int):
+    file_name = self.__foo.bmp_tbl.rows[cg_index][0]
+    file_path = resolve_path_case_insensitive(self.__asset_root, 'CG', file_name)
+    self.__ui.label_background.setPixmap(QPixmap(file_path, format='BMP'))

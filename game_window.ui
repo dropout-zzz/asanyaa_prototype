@@ -119,6 +119,18 @@
     </property>
    </widget>
   </widget>
+  <widget class="QLabel" name="label_background">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1280</width>
+     <height>720</height>
+    </rect>
+   </property>
+  </widget>
+  <zorder>label_background</zorder>
+  <zorder>widget_messageArea</zorder>
  </widget>
  <resources/>
  <connections/>

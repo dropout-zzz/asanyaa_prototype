@@ -75,6 +75,7 @@ class Opcode(IntEnum):
   FADE_OUT_SFX = 0x0d
 
   PLAY_MOVIE = 0x0f
+  SWITCH_BACKGROUND = 0x13
   SKIP_TO_NEXT_SCRIPT = 0x24
   CHANGE_FACE_CG = 0x2a
 
@@ -129,6 +130,7 @@ class ScriptExecutor:
     self.__cb_fade_out_sfx = None
 
     self.__cb_play_movie = None
+    self.__cb_switch_background = None
 
     # --- callbacks end ---
 
@@ -174,6 +176,9 @@ class ScriptExecutor:
 
   def set_play_movie_callback(self, fn):
     self.__cb_play_movie = fn
+
+  def set_switch_background_callback(self, fn):
+    self.__cb_switch_background = fn
 
   # --- callback setters end ---
 
@@ -256,6 +261,13 @@ class ScriptExecutor:
 
             movie_id = int.from_bytes(inst.arguments[-4:], sys.byteorder)
             self.__cb_play_movie(movie_id, play_movie_flags)
+
+        case Opcode.SWITCH_BACKGROUND:
+          with io.BytesIO(inst.arguments) as buf:
+            buf.read(16)  # skip unk1
+            cg_index = int.from_bytes(buf.read(4), sys.byteorder)
+            transition_effect_id = int.from_bytes(inst.arguments[-4:], sys.byteorder)
+            self.__cb_switch_background(cg_index, transition_effect_id)
 
       if self.__want_stop:
         break
