@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from PySide6.QtWidgets import QApplication
 from title import TitleForm
 import argparse
