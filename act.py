@@ -46,7 +46,9 @@ def load_act(asset_root: str, letter: str) -> Act:
   act = Act()
   act.letter = letter
 
-  with open(resolve_path_case_insensitive(asset_root, 'data', f'ACT_{letter}.DAT'), 'rb') as f:
+  with open(resolve_path_case_insensitive(asset_root,
+                                          'data',
+                                          f'ACT_{letter}.DAT'), 'rb') as f:
     with io.BytesIO(f.read()) as buf:
       n_spt_files = int.from_bytes(buf.read(4), sys.byteorder)
       if len(buf.getbuffer()) != 4 + n_spt_files * 156:
@@ -90,10 +92,14 @@ def load_act(asset_root: str, letter: str) -> Act:
         act.script_map[script_map_key] = spt_desc
         n_spt_files -= 1
 
-  with open(resolve_path_case_insensitive(asset_root, 'data', f'ACT_{letter}_JA.TXD'), 'rb') as f:
+  with open(resolve_path_case_insensitive(asset_root,
+                                          'data',
+                                          f'ACT_{letter}_JA.TXD'), 'rb') as f:
     act.strtab = f.read()
 
-  with open(resolve_path_case_insensitive(asset_root, 'data', f'ACT_{letter}_JA.PTR'), 'rb') as f:
+  with open(resolve_path_case_insensitive(asset_root,
+                                          'data',
+                                          f'ACT_{letter}_JA.PTR'), 'rb') as f:
     with io.BytesIO(f.read()) as buf:
       if buf.read(4) != b'PTR ':
         raise ValueError('bad file magic')

@@ -18,7 +18,11 @@ def _get_unescaped(m: re.Match) -> str:
 def load_system_messages(asset_root: str) -> SystemMessageTable:
   smt = SystemMessageTable()
 
-  with open(resolve_path_case_insensitive(asset_root, 'data', 'messages.txt'), 'r', encoding='utf-8') as f:
+  with open(resolve_path_case_insensitive(asset_root,
+                                          'data',
+                                          'messages.txt'),
+            'r',
+            encoding='utf-8') as f:
     for line in f.read().removesuffix('\n').split('\n'):
       key, text_escaped = line.split('=', 1)
       if len(key) < 1 or key.isspace():

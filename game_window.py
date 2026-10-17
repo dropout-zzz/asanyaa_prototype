@@ -51,7 +51,11 @@ class SelectionDialog(QDialog):
     return self.__selected
 
 class MovieWindow(QDialog):
-  def __init__(self, parent: QWidget, video_path: str, foo: Foo, user_skippable: bool = True):
+  def __init__(self,
+               parent: QWidget,
+               video_path: str,
+               foo: Foo,
+               user_skippable: bool = True):
     QDialog.__init__(self, parent)
     self.setWindowTitle('Movie')
     self.resize(1280, 720)
@@ -110,7 +114,11 @@ class MovieWindow(QDialog):
     self.__mp.play()
 
 class GameWindow(QWidget):
-  def __init__(self, title_window: QWidget, script_executor: ScriptExecutor, foo: Foo, asset_root: str):
+  def __init__(self,
+               title_window: QWidget,
+               script_executor: ScriptExecutor,
+               foo: Foo,
+               asset_root: str):
     QWidget.__init__(self)
     self.__ui = Ui_GameWindow()
     self.__ui.setupUi(self)
@@ -193,7 +201,11 @@ class GameWindow(QWidget):
         continue
       return selected
 
-  def __handle_show_dialogue_wait(self, name_tag: str, text: str, character_id: int, voice_id: int):
+  def __handle_show_dialogue_wait(self,
+                                  name_tag: str,
+                                  text: str,
+                                  character_id: int,
+                                  voice_id: int):
     self.__ui.label_nameTag.setText(name_tag)
     self.__ui.label_dialogueText.setText(text)
 
@@ -203,9 +215,15 @@ class GameWindow(QWidget):
         break
       cv_div += 1
 
-    voice_folder_name = f'CV{character_id:02}_{cv_div}' if cv_div > 0 else f'CV{character_id:02}'
+    if cv_div > 0:
+      voice_folder_name = f'CV{character_id:02}_{cv_div}'
+    else:
+      voice_folder_name = f'CV{character_id:02}'
+
     try:
-      voice_path = resolve_path_case_insensitive(self.__asset_root, voice_folder_name, f'{voice_id:04}.ogg')
+      voice_path = resolve_path_case_insensitive(self.__asset_root,
+                                                 voice_folder_name,
+                                                 f'{voice_id:04}.ogg')
     except FileNotFoundError:
       pass
     else:
@@ -223,12 +241,16 @@ class GameWindow(QWidget):
       return
 
     fcg_name = self.__foo.bmp_tbl.rows[cg_index][0].removesuffix('.kg')
-    file_path = resolve_path_case_insensitive(self.__asset_root, 'FCG', f'{fcg_name}.png')
+    file_path = resolve_path_case_insensitive(self.__asset_root,
+                                              'FCG',
+                                              f'{fcg_name}.png')
     self.__ui.label_faceImageArea.setPixmap(QPixmap(file_path, format='PNG'))
 
   def __handle_play_bgm(self, background_music_id: int):
     bgm_name = self.__foo.bgm_tbl.rows[background_music_id][0]
-    bgm_path = resolve_path_case_insensitive(self.__asset_root, 'BGM', bgm_name)
+    bgm_path = resolve_path_case_insensitive(self.__asset_root,
+                                             'BGM',
+                                             bgm_name)
     self.__mp_bgm.setSource(QUrl.fromLocalFile(bgm_path))
     self.__mp_bgm.play()
 
@@ -256,6 +278,9 @@ class GameWindow(QWidget):
     movie_file_name = self.__foo.movie_tbl.rows[movie_id][0]
     movie_path = resolve_path_case_insensitive(self.__asset_root, movie_file_name)
 
-    dlg = MovieWindow(self, movie_path, self.__foo, PlayMovieFlag.USER_UNSKIPPABLE in play_movie_flags)
+    dlg = MovieWindow(self,
+                      movie_path,
+                      self.__foo,
+                      PlayMovieFlag.USER_UNSKIPPABLE in play_movie_flags)
     dlg.begin_playback()
     dlg.exec()

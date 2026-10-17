@@ -11,7 +11,11 @@ class Table:
 def load_table(asset_root: str, name: str) -> Table:
   tbl = Table()
 
-  with open(resolve_path_case_insensitive(asset_root, 'data', f'{name}.tbl'), 'r', encoding='utf-8') as f:
+  with open(resolve_path_case_insensitive(asset_root,
+                                          'data',
+                                          f'{name}.tbl'),
+            'r',
+            encoding='utf-8') as f:
     for i, row in enumerate(f.read().split('\n')):
       comment_start = row.find('//')
       cleaned_row = (row if comment_start < 0 else row[:comment_start]).strip()

@@ -8,7 +8,10 @@ from script import ScriptExecutor
 from foo import Foo
 
 class TitleForm(QWidget):
-  def __init__(self, qapplication: QApplication, asset_root: str, foo: Foo):
+  def __init__(self,
+               qapplication: QApplication,
+               asset_root: str,
+               foo: Foo):
     QWidget.__init__(self)
     self.__ui = Ui_TitleForm()
     self.__ui.setupUi(self)
@@ -29,8 +32,14 @@ class TitleForm(QWidget):
   def __do_new_game(self):
     act = load_act(self.__asset_root, 'A')
     script = load_script(self.__asset_root, 'A', 0, 0)
-    executor = ScriptExecutor(act, script, 0, self.__asset_root)
-    self.__gw = GameWindow(self, executor, self.__foo, self.__asset_root)
+    executor = ScriptExecutor(act,
+                              script,
+                              0,
+                              self.__asset_root)
+    self.__gw = GameWindow(self,
+                           executor,
+                           self.__foo,
+                           self.__asset_root)
     self.__gw.show()
     self.close()
     self.__gw.init()

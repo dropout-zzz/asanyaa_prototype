@@ -27,7 +27,10 @@ class Script:
   script_sub_id: int = 0
   instructions: list[Instruction] = dataclasses.field(default_factory=list)
 
-def load_script(asset_root: str, letter: str, script_id: int, script_sub_id: int) -> Script:
+def load_script(asset_root: str,
+                letter: str,
+                script_id: int,
+                script_sub_id: int) -> Script:
   if len(letter) != 1 or letter not in string.ascii_uppercase:
     raise ValueError(f'not a script letter: {letter!r}')
   if script_id < 0 or script_sub_id < 0:
@@ -38,7 +41,11 @@ def load_script(asset_root: str, letter: str, script_id: int, script_sub_id: int
   script.script_id = script_id
   script.script_sub_id = script_sub_id
 
-  with open(resolve_path_case_insensitive(asset_root, 'data', f'{letter}{script_id:04}_{script_sub_id:02}.spt'), 'rb') as f:
+  script_file_name = f'{letter}{script_id:04}_{script_sub_id:02}.spt'
+
+  with open(resolve_path_case_insensitive(asset_root,
+                                          'data',
+                                          script_file_name), 'rb') as f:
     with io.BytesIO(f.read()) as buf:
       n_instruction = int.from_bytes(buf.read(4), sys.byteorder)
       if len(buf.getbuffer()) != 4 + n_instruction * 32:
@@ -77,7 +84,11 @@ class PlayMovieFlag(Flag):
   USER_UNSKIPPABLE = enum.auto()
 
 class ScriptExecutor:
-  def __init__(self, act: Act, script: Script, instruction_pos: int, asset_root: str):
+  def __init__(self,
+               act: Act,
+               script: Script,
+               instruction_pos: int,
+               asset_root: str):
     script_map_key = (script.script_id, script.script_sub_id)
 
     if act.letter != script.letter or script_map_key not in act.script_map:
@@ -160,7 +171,8 @@ class ScriptExecutor:
           text_id = int.from_bytes(inst.arguments[-4:], sys.byteorder)
           text_info = self.__current_act.str_info[text_id]
           txd_off = text_info.offset_in_txd
-          name_tag, text_escaped = self.__current_act.strtab[txd_off:txd_off + text_info.length].decode('utf-8').split(',', 1)
+          portion = self.__current_act.strtab[txd_off:txd_off + text_info.length]
+          name_tag, text_escaped = portion.decode('utf-8').split(',', 1)
           text = _ESCAPES.sub(_get_unescaped, text_escaped)
 
           if self.__script_type == ScriptType.SELECTION:
@@ -219,8 +231,10 @@ class ScriptExecutor:
         break
 
       self.__current_instruction += 1
-      if self.__current_instruction == len(self.__current_script.instructions) or inst.opcode == Opcode.SKIP_TO_NEXT_SCRIPT:
-        desc = self.__current_act.script_map[(self.__current_script.script_id, self.__current_script.script_sub_id)]
+      if self.__current_instruction == len(self.__current_script.instructions) \
+         or inst.opcode == Opcode.SKIP_TO_NEXT_SCRIPT:
+        script_map_key = (self.__current_script.script_id, self.__current_script.script_sub_id)
+        desc = self.__current_act.script_map[script_map_key]
         if desc.next_script_letter != self.__current_act.letter:
           self.__current_act = load_act(self.__asset_root, desc.next_script_letter)
         if self.__script_type == ScriptType.SELECTION:
@@ -228,14 +242,19 @@ class ScriptExecutor:
             raise ValueError('missing selection prompt')
           if len(self.__choices) == 0:
             raise ValueError('missing selection choices')
-          next_script_sub_id = desc.next_script_sub_id[self.__cb_ask_choices(self.__selection_prompt, self.__choices)]
+          selected = self.__cb_ask_choices(self.__selection_prompt, self.__choices)
+          next_script_sub_id = desc.next_script_sub_id[selected]
           if next_script_sub_id < 0:
             raise ValueError('missing valid jump target for choice')
         else:
           next_script_sub_id = desc.next_script_sub_id[0]
-        self.__current_script = load_script(self.__asset_root, desc.next_script_letter, desc.next_script_id, next_script_sub_id)
+        self.__current_script = load_script(self.__asset_root,
+                                            desc.next_script_letter,
+                                            desc.next_script_id,
+                                            next_script_sub_id)
 
-        next_script_type = self.__current_act.script_map[(desc.next_script_id, next_script_sub_id)].script_type
+        script_map_key = (desc.next_script_id, next_script_sub_id)
+        next_script_type = self.__current_act.script_map[script_map_key].script_type
         self.__script_type = next_script_type
         if next_script_type == ScriptType.SELECTION:
           self.__selection_prompt = None
