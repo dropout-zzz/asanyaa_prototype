@@ -17,12 +17,16 @@ class ScriptType(enum.IntEnum):
 @dataclass
 class SptDesc:
   script_title: str = ''
+
   first_line_no: int = 0
   last_line_no: int = 0
+
   script_letter: str = 'A'
   script_id: int = 0
   script_sub_id: int = 0
+
   script_type: ScriptType = ScriptType.SCENARIO
+
   next_script_letter: str = 'A'
   next_script_id: int = 0
   next_script_sub_id: list[int] = dataclasses.field(default_factory=lambda: [0] * 10)

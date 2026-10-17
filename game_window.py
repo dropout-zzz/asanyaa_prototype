@@ -18,6 +18,8 @@ from script import ScriptExecutor, PlayMovieFlag
 from foo import Foo
 from utils import resolve_path_case_insensitive
 
+# --- selection dialog start ---
+
 class ChoiceButton(QPushButton):
   myCallback = QtCore.Signal(int)
 
@@ -52,6 +54,8 @@ class SelectionDialog(QDialog):
   def get_selected(self) -> int:
     return self.__selected
 
+# --- selection dialog end ---
+
 class MovieWindow(QDialog):
   def __init__(self,
                parent: QWidget,
@@ -83,6 +87,8 @@ class MovieWindow(QDialog):
 
     self.finished.connect(self.__handle_dialog_finished)
 
+  # -- overriden methods
+
   @override
   def mousePressEvent(self, event: QMouseEvent):
     if self.__user_skippable and event.button() == Qt.MouseButton.LeftButton:
@@ -90,6 +96,8 @@ class MovieWindow(QDialog):
       self.accept()
       return
     QDialog.mousePressEvent(self, event)
+
+  # -- qt callbacks
 
   @QtCore.Slot()
   def __handle_video_size_change(self):
@@ -111,6 +119,8 @@ class MovieWindow(QDialog):
   @QtCore.Slot(int)
   def __handle_dialog_finished(self, result: int):
     self.__mp.stop()
+
+  # -- public methods
 
   def begin_playback(self):
     self.__mp.play()
@@ -144,6 +154,8 @@ class GameWindow(QWidget):
 
     self.__ui.pushButton_backToTitle.clicked.connect(self.__do_back_to_title)
 
+    # --- register callbacks start ---
+
     self.__executor.set_ask_choices_callback(self.__handle_ask_choices)
     self.__executor.set_show_dialogue_wait_callback(self.__handle_show_dialogue_wait)
     self.__executor.set_set_face_cg_callback(self.__handle_set_face_cg)
@@ -158,6 +170,10 @@ class GameWindow(QWidget):
     self.__executor.set_fade_out_sfx(self.__handle_fade_out_sfx)
 
     self.__executor.set_play_movie_callback(self.__handle_play_movie)
+
+    # --- register callbacks end ---
+
+  # --- overridden methods start ---
 
   @override
   def closeEvent(self, event):
@@ -185,8 +201,24 @@ class GameWindow(QWidget):
       return
     QWidget.mousePressEvent(self, event)
 
+  # --- overridden methods end ---
+
+  # --- public methods start ---
+
   def init(self):
     self.__executor.continue_execution()
+
+  # --- public methods end ---
+
+  # --- private methods start ---
+
+  def __construct_sfx_path(self, sound_effect_id: int) -> str:
+    sfx_name = self.__foo.se_tbl.rows[sound_effect_id][0]
+    return resolve_path_case_insensitive(self.__asset_root, 'SE', sfx_name)
+
+  # --- private methods end ---
+
+  # --- qt callbacks start ---
 
   @QtCore.Slot()
   def __do_back_to_title(self):
@@ -259,10 +291,6 @@ class GameWindow(QWidget):
   def __handle_stop_bgm(self):
     self.__mp_bgm.stop()
 
-  def __construct_sfx_path(self, sound_effect_id: int) -> str:
-    sfx_name = self.__foo.se_tbl.rows[sound_effect_id][0]
-    return resolve_path_case_insensitive(self.__asset_root, 'SE', sfx_name)
-
   def __handle_play_sfx(self, sound_effect_id: int):
     self.__mp_sfx.setSource(QUrl.fromLocalFile(self.__construct_sfx_path(sound_effect_id)))
     self.__mp_sfx.setLoops(QMediaPlayer.Loops.Once)
@@ -286,3 +314,5 @@ class GameWindow(QWidget):
                       PlayMovieFlag.USER_UNSKIPPABLE in play_movie_flags)
     dlg.begin_playback()
     dlg.exec()
+
+  # --- qt callbacks end ---
