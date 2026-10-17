@@ -10,6 +10,7 @@ class Foo:
   bmp_tbl: Table
   cv_div: dict[int, list[int]]
   bgm_tbl: Table
+  se_tbl: Table
 
 def foo_init(asset_root: str) -> Foo:
   tmp = {}
@@ -29,5 +30,6 @@ def foo_init(asset_root: str) -> Foo:
       tmp['cv_div'][character_id] = n
 
   tmp['bgm_tbl'] = load_table(asset_root, 'bgm')
+  tmp['se_tbl'] = load_table(asset_root, 'se')
 
   return Foo(**tmp)
