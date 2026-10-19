@@ -306,4 +306,15 @@ class ScriptExecutor:
        use it to resolve text IDs."""
     return self.__current_act
 
+  # return informations needed for
+  #  caller to implement saving.
+  def get_instruction_pos(self) -> int:
+    return self.__current_instruction
+  def get_script_id(self) -> int:
+    return self.__current_script.script_id
+  def get_script_sub_id(self) -> int:
+    return self.__current_script.script_sub_id
+  def get_act_letter(self) -> int:
+    return self.__current_act.letter
+
   # --- getters end ---
