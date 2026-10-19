@@ -49,6 +49,6 @@ class TitleForm(QWidget):
                            self.__asset_root)
     self.__gw.show()
     self.close()
-    self.__gw.init()
+    self.__gw.run_until_no_more_script()
 
   # --- qt callbacks end ---

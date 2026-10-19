@@ -1,6 +1,7 @@
 # -- py std
 from typing import override
 import re
+from dataclasses import dataclass
 
 # -- qt
 from PySide6 import QtCore
@@ -127,6 +128,14 @@ def _get_unescaped(m: re.Match) -> str:
   return _UNESCAPES[m.group(0)]
 
 class GameWindow(QWidget):
+  @dataclass
+  class State:
+    current_dialogue_text_id: int | None = None
+    current_face_cg_id: int | None = None
+    current_background_music_id: int | None = None
+    current_sound_effect_id: int | None = None
+    current_background_cg_id: int | None = None
+
   def __init__(self,
                title_window: QWidget,
                script_executor: ScriptExecutor,
@@ -142,6 +151,7 @@ class GameWindow(QWidget):
     self.__dialogue_wait_event_loop: QEventLoop | None = None
     self.__foo = foo
     self.__asset_root = asset_root
+    self.__state = self.State()
 
     self.__ao_voice = QAudioOutput(self)
     self.__mp_voice = QMediaPlayer(self, audioOutput=self.__ao_voice)
@@ -180,26 +190,15 @@ class GameWindow(QWidget):
 
   @override
   def closeEvent(self, event):
-    self.__executor.stop()
-    if self.__dialogue_wait_event_loop is not None:
-      event_loop = self.__dialogue_wait_event_loop
-      self.__dialogue_wait_event_loop = None
-      event_loop.quit()
-
-    self.__mp_voice.stop()
-    self.__mp_bgm.stop()
-    self.__mp_sfx.stop()
-
+    self.__cleanup()
+    self.__executor = None
     QWidget.closeEvent(self, event)
 
   @override
   def mousePressEvent(self, event: QMouseEvent):
-    if event.button() == Qt.MouseButton.LeftButton and self.__dialogue_wait_event_loop is not None:
+    if event.button() == Qt.MouseButton.LeftButton and self.__has_pending_dialogue():
       # progress the dialogue
-
-      event_loop = self.__dialogue_wait_event_loop
-      self.__dialogue_wait_event_loop = None
-      event_loop.quit()
+      self.__abort_pending_dialogue()
       event.accept()
       return
     QWidget.mousePressEvent(self, event)
@@ -208,8 +207,50 @@ class GameWindow(QWidget):
 
   # --- public methods start ---
 
-  def init(self):
-    self.__executor.continue_execution()
+  def run_until_no_more_script(self):
+    while self.__executor is not None:
+      self.__executor.continue_execution()
+
+  def restore_from_state(self, state: State, executor: ScriptExecutor):
+    """intentionally not placing these logics in __init__() to
+        allow loading savedata without re-creating GameWindow."""
+
+    self.__cleanup()
+
+    # -- extra UI resetting
+
+    self.__ui.label_nameTag.clear()
+    self.__ui.label_dialogueText.clear()
+    self.__ui.label_background.clear()
+    self.__ui.label_faceImageArea.clear()
+
+    # --
+    self.__state = state
+    self.__executor = executor
+
+    # -- now actually restore UI
+
+    if state.current_dialogue_text_id is not None:
+      name_tag, text = self.__resolve_text_id(state.current_dialogue_text_id)
+      self.__ui.label_nameTag.setText(name_tag)
+      self.__ui.label_dialogueText.setText(text)
+
+    if state.current_face_cg_id is not None:
+      self.__set_face_cg(state.current_face_cg_id)
+
+    if state.current_background_music_id is not None:
+      bgm_path = self.__construct_bgm_path(state.current_background_music_id)
+      self.__mp_bgm.setSource(QUrl.fromLocalFile(bgm_path))
+      self.__mp_bgm.play()
+
+    if state.current_sound_effect_id is not None:
+      sfx_path = self.__construct_sfx_path(state.current_sound_effect_id)
+      self.__mp_sfx.setSource(QUrl.fromLocalFile(sfx_path))
+      self.__mp_sfx.setLoops(QMediaPlayer.Loops.Infinite)
+      self.__mp_sfx.play()
+
+    if state.current_background_cg_id is not None:
+      self.__set_background(state.current_background_cg_id)
 
   # --- public methods end ---
 
@@ -229,6 +270,40 @@ class GameWindow(QWidget):
     text = _ESCAPES.sub(_get_unescaped, text_escaped)
 
     return name_tag, text
+
+  def __has_pending_dialogue(self) -> bool:
+    return self.__dialogue_wait_event_loop is not None
+
+  def __abort_pending_dialogue(self):
+    event_loop = self.__dialogue_wait_event_loop
+    self.__dialogue_wait_event_loop = None
+    event_loop.quit()
+
+  def __cleanup(self):
+    self.__executor.stop()
+
+    if self.__has_pending_dialogue():
+      self.__abort_pending_dialogue()
+
+    self.__mp_voice.stop()
+    self.__mp_bgm.stop()
+    self.__mp_sfx.stop()
+
+  def __set_face_cg(self, cg_index: int):
+    fcg_name = self.__foo.bmp_tbl.rows[cg_index][0].removesuffix('.kg')
+    file_path = resolve_path_case_insensitive(self.__asset_root,
+                                              'FCG',
+                                              f'{fcg_name}.png')
+    self.__ui.label_faceImageArea.setPixmap(QPixmap(file_path, format='PNG'))
+
+  def __construct_bgm_path(self, background_music_id: int) -> str:
+    bgm_name = self.__foo.bgm_tbl.rows[background_music_id][0]
+    return resolve_path_case_insensitive(self.__asset_root, 'BGM', bgm_name)
+
+  def __set_background(self, cg_index: int):
+    file_name = self.__foo.bmp_tbl.rows[cg_index][0]
+    file_path = resolve_path_case_insensitive(self.__asset_root, 'CG', file_name)
+    self.__ui.label_background.setPixmap(QPixmap(file_path, format='BMP'))
 
   # --- private methods end ---
 
@@ -263,6 +338,7 @@ class GameWindow(QWidget):
     name_tag, text = self.__resolve_text_id(text_id)
     self.__ui.label_nameTag.setText(name_tag)
     self.__ui.label_dialogueText.setText(text)
+    self.__state.current_dialogue_text_id = text_id
 
     cv_div = 0
     for n in self.__foo.cv_div.get(character_id, []):
@@ -293,26 +369,23 @@ class GameWindow(QWidget):
   def __handle_set_face_cg(self, cg_index: int):
     if cg_index < 0:
       self.__ui.label_faceImageArea.clear()
+      self.__state.current_face_cg_id = None
       return
 
-    fcg_name = self.__foo.bmp_tbl.rows[cg_index][0].removesuffix('.kg')
-    file_path = resolve_path_case_insensitive(self.__asset_root,
-                                              'FCG',
-                                              f'{fcg_name}.png')
-    self.__ui.label_faceImageArea.setPixmap(QPixmap(file_path, format='PNG'))
+    self.__set_face_cg(cg_index)
+    self.__state.current_face_cg_id = cg_index
 
   #   --- bgm start ---
 
   def __handle_play_bgm(self, background_music_id: int):
-    bgm_name = self.__foo.bgm_tbl.rows[background_music_id][0]
-    bgm_path = resolve_path_case_insensitive(self.__asset_root,
-                                             'BGM',
-                                             bgm_name)
+    bgm_path = self.__construct_bgm_path(background_music_id)
     self.__mp_bgm.setSource(QUrl.fromLocalFile(bgm_path))
     self.__mp_bgm.play()
+    self.__state.current_background_music_id = background_music_id
 
   def __handle_stop_bgm(self):
     self.__mp_bgm.stop()
+    self.__state.current_background_music_id = None
 
   #   --- bgm end ---
 
@@ -322,14 +395,17 @@ class GameWindow(QWidget):
     self.__mp_sfx.setSource(QUrl.fromLocalFile(self.__construct_sfx_path(sound_effect_id)))
     self.__mp_sfx.setLoops(QMediaPlayer.Loops.Once)
     self.__mp_sfx.play()
+    self.__state.current_sound_effect_id = None
 
   def __handle_play_sfx_loop(self, sound_effect_id: int):
     self.__mp_sfx.setSource(QUrl.fromLocalFile(self.__construct_sfx_path(sound_effect_id)))
     self.__mp_sfx.setLoops(QMediaPlayer.Loops.Infinite)
     self.__mp_sfx.play()
+    self.__state.current_sound_effect_id = sound_effect_id
 
   def __handle_fade_out_sfx(self):
     self.__mp_sfx.stop()
+    self.__state.current_sound_effect_id = None
 
   #   --- sfx end ---
 
@@ -345,6 +421,5 @@ class GameWindow(QWidget):
     dlg.exec()
 
   def __handle_switch_background(self, cg_index: int, transition_effect_id: int):
-    file_name = self.__foo.bmp_tbl.rows[cg_index][0]
-    file_path = resolve_path_case_insensitive(self.__asset_root, 'CG', file_name)
-    self.__ui.label_background.setPixmap(QPixmap(file_path, format='BMP'))
+    self.__set_background(cg_index)
+    self.__state.current_background_cg_id = cg_index
