@@ -81,8 +81,8 @@ class MovieWindow(QDialog):
     self.__foo = foo
     self.__user_skippable = user_skippable
 
-    self.__ao = QAudioOutput(parent=self, volume=0.30)
-    self.__mp = QMediaPlayer(parent=self,
+    self.__ao = QAudioOutput(self, volume=0.30)
+    self.__mp = QMediaPlayer(self,
                              audioOutput=self.__ao,
                              videoOutput=self.__vw,
                              source=QUrl.fromLocalFile(video_path))
@@ -147,16 +147,16 @@ class GameWindow(QWidget):
     self.__foo = foo
     self.__asset_root = asset_root
 
-    self.__ao_voice = QAudioOutput(parent=self)
-    self.__mp_voice = QMediaPlayer(parent=self, audioOutput=self.__ao_voice)
+    self.__ao_voice = QAudioOutput(self)
+    self.__mp_voice = QMediaPlayer(self, audioOutput=self.__ao_voice)
 
-    self.__ao_bgm = QAudioOutput(parent=self, volume=0.20)
-    self.__mp_bgm = QMediaPlayer(parent=self,
+    self.__ao_bgm = QAudioOutput(self, volume=0.20)
+    self.__mp_bgm = QMediaPlayer(self,
                                  audioOutput=self.__ao_bgm,
                                  loops=QMediaPlayer.Loops.Infinite)
 
-    self.__ao_sfx = QAudioOutput(parent=self, volume=0.50)
-    self.__mp_sfx = QMediaPlayer(parent=self, audioOutput=self.__ao_sfx)
+    self.__ao_sfx = QAudioOutput(self, volume=0.50)
+    self.__mp_sfx = QMediaPlayer(self, audioOutput=self.__ao_sfx)
 
     self.__ui.pushButton_backToTitle.clicked.connect(self.__do_back_to_title)
 
