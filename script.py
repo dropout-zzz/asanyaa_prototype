@@ -13,6 +13,8 @@ import re
 from act import Act, ScriptType, load_act
 from utils import resolve_path_case_insensitive
 
+# --- script loader start ---
+
 @dataclass
 class Instruction:
   opcode: int = 0
@@ -59,6 +61,8 @@ def load_script(asset_root: str,
         n_instruction -= 1
 
   return script
+
+# --- script loader end ---
 
 class Opcode(IntEnum):
   DIALOGUE = 0x01
@@ -108,9 +112,11 @@ class ScriptExecutor:
       raise ValueError('not a instruction position')
     self.__current_instruction = instruction_pos
 
+    # -- private variables
     self.__asset_root = asset_root
     self.__want_stop = False
 
+    # -- selection
     self.__selection_prompt: str | None = None
     self.__choices: list[str] = []
 

@@ -1,5 +1,7 @@
+# -- py std
 from typing import override
 
+# -- qt
 from PySide6 import QtCore
 from PySide6.QtCore import Qt, QEventLoop, QUrl
 from PySide6.QtGui import QMouseEvent, QPixmap
@@ -12,8 +14,10 @@ from PySide6.QtWidgets import (QWidget,
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
 
+# -- qt generated
 from ui_game_window import Ui_GameWindow
 
+# -- project modules
 from script import ScriptExecutor, PlayMovieFlag
 from foo import Foo
 from utils import resolve_path_case_insensitive
@@ -73,6 +77,7 @@ class MovieWindow(QDialog):
     self.__layout.addWidget(self.__vw)
     self.setLayout(self.__layout)
 
+    # -- private variables
     self.__foo = foo
     self.__user_skippable = user_skippable
 
@@ -135,6 +140,7 @@ class GameWindow(QWidget):
     self.__ui = Ui_GameWindow()
     self.__ui.setupUi(self)
 
+    # -- private variables
     self.__tw = title_window
     self.__executor = script_executor
     self.__dialogue_wait_event_loop: QEventLoop | None = None
@@ -285,6 +291,8 @@ class GameWindow(QWidget):
                                               f'{fcg_name}.png')
     self.__ui.label_faceImageArea.setPixmap(QPixmap(file_path, format='PNG'))
 
+  #   --- bgm start ---
+
   def __handle_play_bgm(self, background_music_id: int):
     bgm_name = self.__foo.bgm_tbl.rows[background_music_id][0]
     bgm_path = resolve_path_case_insensitive(self.__asset_root,
@@ -295,6 +303,10 @@ class GameWindow(QWidget):
 
   def __handle_stop_bgm(self):
     self.__mp_bgm.stop()
+
+  #   --- bgm end ---
+
+  #   --- sfx start ---
 
   def __handle_play_sfx(self, sound_effect_id: int):
     self.__mp_sfx.setSource(QUrl.fromLocalFile(self.__construct_sfx_path(sound_effect_id)))
@@ -308,6 +320,8 @@ class GameWindow(QWidget):
 
   def __handle_fade_out_sfx(self):
     self.__mp_sfx.stop()
+
+  #   --- sfx end ---
 
   def __handle_play_movie(self, movie_id: int, play_movie_flags: PlayMovieFlag):
     movie_file_name = self.__foo.movie_tbl.rows[movie_id][0]

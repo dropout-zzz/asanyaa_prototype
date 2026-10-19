@@ -1,8 +1,11 @@
+# -- qt
 from PySide6 import QtCore
 from PySide6.QtWidgets import QWidget, QApplication
 
+# -- qt generated
 from ui_title import Ui_TitleForm
 
+# -- project modules
 from game_window import GameWindow
 from act import load_act
 from script import load_script, ScriptExecutor
@@ -17,6 +20,7 @@ class TitleForm(QWidget):
     self.__ui = Ui_TitleForm()
     self.__ui.setupUi(self)
 
+    # -- private variables
     self.__qapp = qapplication
     self.__gw = None
     self.__asset_root = asset_root
@@ -24,6 +28,8 @@ class TitleForm(QWidget):
 
     self.__ui.pushButton_quit.clicked.connect(self.__do_quit)
     self.__ui.pushButton_newGame.clicked.connect(self.__do_new_game)
+
+  # --- qt callbacks start ---
 
   @QtCore.Slot()
   def __do_quit(self):
@@ -44,3 +50,5 @@ class TitleForm(QWidget):
     self.__gw.show()
     self.close()
     self.__gw.init()
+
+  # --- qt callbacks end ---
