@@ -1,5 +1,6 @@
 # -- py std
 from typing import override
+import re
 
 # -- qt
 from PySide6 import QtCore
@@ -130,6 +131,12 @@ class MovieWindow(QDialog):
   def begin_playback(self):
     self.__mp.play()
 
+_UNESCAPES: dict[str, str] = {r'\n': '\n', '&heart;': '❤'}
+_ESCAPES = re.compile('|'.join(map(re.escape, _UNESCAPES.keys())))
+
+def _get_unescaped(m: re.Match) -> str:
+  return _UNESCAPES[m.group(0)]
+
 class GameWindow(QWidget):
   def __init__(self,
                title_window: QWidget,
@@ -223,6 +230,17 @@ class GameWindow(QWidget):
     sfx_name = self.__foo.se_tbl.rows[sound_effect_id][0]
     return resolve_path_case_insensitive(self.__asset_root, 'SE', sfx_name)
 
+  def __resolve_text_id(self, text_id: int) -> tuple[str, str]:
+    act = self.__executor.get_act()
+
+    text_info = act.str_info[text_id]
+    txd_off = text_info.offset_in_txd
+    portion = act.strtab[txd_off:txd_off + text_info.length]
+    name_tag, text_escaped = portion.decode('utf-8').split(',', 1)
+    text = _ESCAPES.sub(_get_unescaped, text_escaped)
+
+    return name_tag, text
+
   # --- private methods end ---
 
   # --- qt callbacks start ---
@@ -236,7 +254,10 @@ class GameWindow(QWidget):
 
   # --- executor callbacks start ---
 
-  def __handle_ask_choices(self, prompt: str, choices: list[str]) -> int:
+  def __handle_ask_choices(self, prompt_text_id: int, choice_text_ids: list[int]) -> int:
+    _, prompt = self.__resolve_text_id(prompt_text_id)
+    choices = [ self.__resolve_text_id(x)[1] for x in choice_text_ids ]
+
     while True:
       dlg = SelectionDialog(self, prompt, choices)
       if dlg.exec() == QDialog.DialogCode.Rejected:
@@ -247,10 +268,10 @@ class GameWindow(QWidget):
       return selected
 
   def __handle_show_dialogue_wait(self,
-                                  name_tag: str,
-                                  text: str,
+                                  text_id: int,
                                   character_id: int,
                                   voice_id: int):
+    name_tag, text = self.__resolve_text_id(text_id)
     self.__ui.label_nameTag.setText(name_tag)
     self.__ui.label_dialogueText.setText(text)
 

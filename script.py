@@ -8,7 +8,6 @@ import sys
 from enum import IntEnum, Flag
 import enum
 import struct
-import re
 
 from act import Act, ScriptType, load_act
 from utils import resolve_path_case_insensitive
@@ -83,12 +82,6 @@ class Opcode(IntEnum):
   SKIP_TO_NEXT_SCRIPT = 0x24
   CHANGE_FACE_CG = 0x2a
 
-_UNESCAPES: dict[str, str] = {r'\n': '\n', '&heart;': '❤'}
-_ESCAPES = re.compile('|'.join(map(re.escape, _UNESCAPES.keys())))
-
-def _get_unescaped(m: re.Match) -> str:
-  return _UNESCAPES[m.group(0)]
-
 class PlayMovieFlag(Flag):
   USER_UNSKIPPABLE = enum.auto()
 
@@ -117,8 +110,8 @@ class ScriptExecutor:
     self.__want_stop = False
 
     # -- selection
-    self.__selection_prompt: str | None = None
-    self.__choices: list[str] = []
+    self.__selection_prompt_text_id: int | None = None
+    self.__choice_text_ids: list[int] = []
 
     # --- callbacks start ---
 
@@ -200,23 +193,17 @@ class ScriptExecutor:
       match inst.opcode:
         case Opcode.DIALOGUE:
           character_id, voice_id = struct.unpack('II', inst.arguments[:8])
-
           text_id = int.from_bytes(inst.arguments[-4:], sys.byteorder)
-          text_info = self.__current_act.str_info[text_id]
-          txd_off = text_info.offset_in_txd
-          portion = self.__current_act.strtab[txd_off:txd_off + text_info.length]
-          name_tag, text_escaped = portion.decode('utf-8').split(',', 1)
-          text = _ESCAPES.sub(_get_unescaped, text_escaped)
 
           if self.__script_type == ScriptType.SELECTION:
-            if self.__selection_prompt is None:
-              self.__selection_prompt = text
+            if self.__selection_prompt_text_id is None:
+              self.__selection_prompt_text_id = text_id
             else:
-              self.__choices.append(text)
-              if len(self.__choices) > 10:
+              self.__choice_text_ids.append(text_id)
+              if len(self.__choice_text_ids) > 10:
                 raise ValueError('too many selection choices')
           else:
-            self.__cb_show_dialogue_wait(name_tag, text, character_id, voice_id)
+            self.__cb_show_dialogue_wait(text_id, character_id, voice_id)
 
         case Opcode.CHANGE_FACE_CG:
           cg_index = int.from_bytes(inst.arguments[-4:], sys.byteorder, signed=True)
@@ -286,11 +273,11 @@ class ScriptExecutor:
         if desc.next_script_letter != self.__current_act.letter:
           self.__current_act = load_act(self.__asset_root, desc.next_script_letter)
         if self.__script_type == ScriptType.SELECTION:
-          if self.__selection_prompt is None:
+          if self.__selection_prompt_text_id is None:
             raise ValueError('missing selection prompt')
-          if len(self.__choices) == 0:
+          if len(self.__choice_text_ids) == 0:
             raise ValueError('missing selection choices')
-          selected = self.__cb_ask_choices(self.__selection_prompt, self.__choices)
+          selected = self.__cb_ask_choices(self.__selection_prompt_text_id, self.__choice_text_ids)
           next_script_sub_id = desc.next_script_sub_id[selected]
           if next_script_sub_id < 0:
             raise ValueError('missing valid jump target for choice')
@@ -305,9 +292,18 @@ class ScriptExecutor:
         next_script_type = self.__current_act.script_map[script_map_key].script_type
         self.__script_type = next_script_type
         if next_script_type == ScriptType.SELECTION:
-          self.__selection_prompt = None
-          self.__choices.clear()
+          self.__selection_prompt_text_id = None
+          self.__choice_text_ids.clear()
         self.__current_instruction = 0
 
   def stop(self):
     self.__want_stop = True
+
+  # --- getters start ---
+
+  def get_act(self) -> Act:
+    """return Act instance allowing caller to
+       use it to resolve text IDs."""
+    return self.__current_act
+
+  # --- getters end ---
