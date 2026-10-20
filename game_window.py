@@ -24,6 +24,7 @@ from ui_game_window import Ui_GameWindow
 from script import ScriptExecutor, PlayMovieFlag
 from foo import Foo
 from utils import resolve_path_case_insensitive
+from save_load import SavedState
 
 class SelectionDialog(QDialog):
   def __init__(self, parent: QWidget, prompt: str, choices: list[str]):
@@ -135,6 +136,18 @@ class GameWindow(QWidget):
     current_background_music_id: int | None = None
     current_sound_effect_id: int | None = None
     current_background_cg_id: int | None = None
+
+    @classmethod
+    def from_saved_state(cls, saved_state: SavedState):
+      gw_state = cls()
+
+      gw_state.current_dialogue_text_id = saved_state.visible_dialogue_text_id
+      gw_state.current_face_cg_id = saved_state.visible_face_cg_id
+      gw_state.current_background_music_id = saved_state.playing_background_music_id
+      gw_state.current_sound_effect_id = saved_state.looping_sound_effect_id
+      gw_state.current_background_cg_id = saved_state.visible_background_cg_id
+
+      return gw_state
 
   def __init__(self,
                title_window: QWidget,
