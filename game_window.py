@@ -11,7 +11,8 @@ from PySide6.QtWidgets import (QWidget,
                                QVBoxLayout,
                                QLabel,
                                QPushButton,
-                               QMessageBox)
+                               QMessageBox,
+                               QButtonGroup)
 from PySide6.QtMultimedia import QAudioOutput, QMediaPlayer
 from PySide6.QtMultimediaWidgets import QVideoWidget
 
@@ -23,43 +24,31 @@ from script import ScriptExecutor, PlayMovieFlag
 from foo import Foo
 from utils import resolve_path_case_insensitive
 
-# --- selection dialog start ---
-
-class ChoiceButton(QPushButton):
-  myCallback = QtCore.Signal(int)
-
-  def __init__(self, text: str, idx: int):
-    QPushButton.__init__(self, text)
-    self.__idx = idx
-    self.clicked.connect(self.__do_callback)
-
-  @QtCore.Slot()
-  def __do_callback(self):
-    self.myCallback.emit(self.__idx)
-
 class SelectionDialog(QDialog):
   def __init__(self, parent: QWidget, prompt: str, choices: list[str]):
     QDialog.__init__(self, parent)
     self.setWindowTitle('Choice')
+
+    self.__button_group = QButtonGroup(self)
+    self.__button_group.idClicked.connect(self.__handle_button_clicked)
+
     self.__layout = QVBoxLayout()
     self.__layout.addWidget(QLabel(prompt))
     for i, choice in enumerate(choices):
-      btn = ChoiceButton(choice, i)
-      btn.myCallback.connect(self.__do_callback)
+      btn = QPushButton(choice)
+      self.__button_group.addButton(btn, i)
       self.__layout.addWidget(btn)
     self.setLayout(self.__layout)
 
     self.__selected = -1
 
   @QtCore.Slot(int)
-  def __do_callback(self, idx: int):
-    self.__selected = idx
+  def __handle_button_clicked(self, button_idx: int):
+    self.__selected = button_idx
     self.accept()
 
   def get_selected(self) -> int:
     return self.__selected
-
-# --- selection dialog end ---
 
 class MovieWindow(QDialog):
   def __init__(self,
