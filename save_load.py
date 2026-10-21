@@ -5,7 +5,14 @@ from dataclasses import dataclass
 from enum import Enum
 import enum
 
-from PySide6.QtWidgets import QDialog, QWidget
+from PySide6.QtWidgets import (QDialog,
+                               QWidget,
+                               QVBoxLayout,
+                               QHBoxLayout,
+                               QButtonGroup,
+                               QToolButton,
+                               QGridLayout,
+                               QDialogButtonBox)
 
 @dataclass
 class SavedState:
@@ -14,6 +21,27 @@ class SavedState:
   playing_background_music_id: int | None = None
   looping_sound_effect_id: int | None = None
   visible_background_cg_id: int | None = None
+
+class PageButtons(QWidget):
+  def __init__(self, n: int):
+    QWidget.__init__(self)
+
+    self.__layout = QHBoxLayout()
+    self.setLayout(self.__layout)
+
+    self.__layout.addStretch(1)
+
+    self.__button_group = QButtonGroup(self)
+    for i in range(n):
+      button = QToolButton()
+      button.setText(str(i + 1))
+      button.setCheckable(True)
+      self.__button_group.addButton(button, i)
+      self.__layout.addWidget(button, 0)
+
+    self.__button_group.button(0).setChecked(True)
+
+_N_PAGES = 10
 
 class SaveLoadWindow(QDialog):
   class Mode(Enum):
@@ -29,3 +57,15 @@ class SaveLoadWindow(QDialog):
         self.setWindowTitle('Load')
       case self.Mode.SAVE:
         self.setWindowTitle('Save')
+
+    self.__layout = QVBoxLayout()
+    self.setLayout(self.__layout)
+
+    self.__page_buttons = PageButtons(_N_PAGES)
+    self.__layout.addWidget(self.__page_buttons, 0)
+
+    self.__grid = QGridLayout()
+    self.__layout.addLayout(self.__grid, 1)
+
+    self.__dialog_buttons = QDialogButtonBox(standardButtons=QDialogButtonBox.StandardButton.Cancel)
+    self.__layout.addWidget(self.__dialog_buttons, 0)
