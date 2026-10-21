@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from enum import Enum
 import enum
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (QDialog,
                                QWidget,
                                QVBoxLayout,
@@ -36,6 +37,7 @@ class PageButtons(QWidget):
       button = QToolButton()
       button.setText(str(i + 1))
       button.setCheckable(True)
+      button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
       self.__button_group.addButton(button, i)
       self.__layout.addWidget(button, 0)
 
