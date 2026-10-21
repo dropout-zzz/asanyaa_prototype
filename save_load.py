@@ -39,6 +39,13 @@ class PageButtons(QWidget):
       self.__button_group.addButton(button, i)
       self.__layout.addWidget(button, 0)
 
+    i = n - 1
+    button_width = self.__button_group.button(i).sizeHint().width()
+    i -= 1
+    while not i < 0:
+      self.__button_group.button(i).setFixedWidth(button_width)
+      i -= 1
+
     self.__button_group.button(0).setChecked(True)
 
 _N_PAGES = 10
