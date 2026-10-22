@@ -13,7 +13,8 @@ from PySide6.QtWidgets import (QDialog,
                                QButtonGroup,
                                QToolButton,
                                QGridLayout,
-                               QDialogButtonBox)
+                               QDialogButtonBox,
+                               QFrame)
 
 @dataclass
 class SavedState:
@@ -50,7 +51,22 @@ class PageButtons(QWidget):
 
     self.__button_group.button(0).setChecked(True)
 
+class SavedataSlotWidget(QFrame):
+  def __init__(self):
+    QFrame.__init__(self)
+    self.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Sunken)
+
+    # Breeze Qt style from KDE Plasma 6 has broken StyledPanel upstream
+    #   https://bugs.kde.org/show_bug.cgi?id=488195
+    #
+    # some KDE apps internally restore old behavior using a property
+    #   https://github.com/KDE/breeze/blob/ef63411/kstyle/breezestyle.cpp#L685
+    #
+    # without this, StyledPanel does nothing at all on KDE Plasma 6.
+    self.setProperty('_breeze_force_frame', True)
+
 _N_PAGES = 10
+_N_ROWS = _N_COLS = 3
 
 class SaveLoadWindow(QDialog):
   class Mode(Enum):
@@ -75,6 +91,17 @@ class SaveLoadWindow(QDialog):
 
     self.__grid = QGridLayout()
     self.__layout.addLayout(self.__grid, 1)
+
+    for j in range(_N_ROWS):
+      for i in range(_N_COLS):
+        ssw = SavedataSlotWidget()
+        self.__grid.addWidget(ssw, j, i)
+
+    for i in range(_N_COLS):
+      self.__grid.setColumnStretch(i, 1)
+
+    for i in range(_N_ROWS):
+      self.__grid.setRowStretch(i, 1)
 
     self.__dialog_buttons = QDialogButtonBox(standardButtons=QDialogButtonBox.StandardButton.Cancel)
     self.__layout.addWidget(self.__dialog_buttons, 0)
