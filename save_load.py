@@ -4,8 +4,11 @@
 from dataclasses import dataclass
 from enum import Enum
 import enum
+from typing import override
+import math
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import QResizeEvent, QPixmap
 from PySide6.QtWidgets import (QDialog,
                                QWidget,
                                QVBoxLayout,
@@ -14,7 +17,9 @@ from PySide6.QtWidgets import (QDialog,
                                QToolButton,
                                QGridLayout,
                                QDialogButtonBox,
-                               QFrame)
+                               QFrame,
+                               QLabel,
+                               QSizePolicy)
 
 @dataclass
 class SavedState:
@@ -50,6 +55,48 @@ class PageButtons(QWidget):
       i -= 1
 
     self.__button_group.button(0).setChecked(True)
+
+class TopCenteredKeepRatioImageWidget(QLabel):
+  """acknowledgements:
+  implementation is largely inspired by:
+  https://stackoverflow.com/questions/8211982/qt-resizing-a-qlabel-containing-a-qpixmap-while-keeping-its-aspect-ratio/43936590#43936590"""
+
+  def __init__(self):
+    QLabel.__init__(self)
+
+    self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Ignored)
+    self.setScaledContents(True)
+
+  def __fixup_ratio(self, widget_size: QSize, pixmap: QPixmap):
+    if widget_size.isEmpty() or pixmap.isNull():
+      self.setContentsMargins(0, 0, 0, 0)
+      return
+
+    pixmap_w, pixmap_h = pixmap.width(), pixmap.height()
+    widget_w, widget_h = widget_size.width(), widget_size.height()
+
+    x = max(pixmap_w / widget_w, pixmap_h / widget_h)
+    scaled_w, scaled_h = pixmap_w / x, pixmap_h / x
+
+    margin_v = math.floor(widget_h - scaled_h)
+    margin_h = math.floor((widget_w - scaled_w) / 2)
+
+    self.setContentsMargins(
+      margin_h,  # left
+      0,  # top
+      margin_h,  # right
+      margin_v  # bottom
+    )
+
+  @override
+  def resizeEvent(self, event: QResizeEvent):
+    self.__fixup_ratio(event.size(), self.pixmap())
+    QLabel.resizeEvent(self, event)
+
+  @override
+  def setPixmap(self, pixmap: QPixmap):
+    QLabel.setPixmap(self, pixmap)
+    self.__fixup_ratio(self.size(), pixmap)
 
 class SavedataSlotWidget(QFrame):
   def __init__(self):
