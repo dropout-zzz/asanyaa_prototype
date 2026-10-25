@@ -34,10 +34,10 @@ class PageButtons(QWidget):
   def __init__(self, n: int):
     QWidget.__init__(self)
 
-    self.__layout = QHBoxLayout()
-    self.setLayout(self.__layout)
+    layout = QHBoxLayout()
+    self.setLayout(layout)
 
-    self.__layout.addStretch(1)
+    layout.addStretch(1)
 
     self.__button_group = QButtonGroup(self)
     for i in range(n):
@@ -46,7 +46,7 @@ class PageButtons(QWidget):
       button.setCheckable(True)
       button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
       self.__button_group.addButton(button, i)
-      self.__layout.addWidget(button, 0)
+      layout.addWidget(button, 0)
 
     i = n - 1
     button_width = self.__button_group.button(i).sizeHint().width()
@@ -113,12 +113,12 @@ class SavedataSlotWidget(QFrame):
     # without this, StyledPanel does nothing at all on KDE Plasma 6.
     self.setProperty('_breeze_force_frame', True)
 
-    self.__layout = QHBoxLayout()
+    layout = QHBoxLayout()
 
     self.__image_widget = TopCenteredKeepRatioImageWidget()
-    self.__layout.addWidget(self.__image_widget, 2)
+    layout.addWidget(self.__image_widget, 2)
 
-    self.__details_layout = QVBoxLayout()
+    details_layout = QVBoxLayout()
 
     self.__title_text_area = QScrollArea()
     self.__title_text_area.setWidgetResizable(True)
@@ -130,25 +130,25 @@ class SavedataSlotWidget(QFrame):
     title_text_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
     self.__title_text_area.setWidget(title_text_label)
 
-    self.__details_layout.addWidget(self.__title_text_area, 1)
+    details_layout.addWidget(self.__title_text_area, 1)
 
     self.__date_label = QLabel()
-    self.__details_layout.addWidget(self.__date_label, 0)
+    details_layout.addWidget(self.__date_label, 0)
 
-    self.__layout.addLayout(self.__details_layout, 5)
+    layout.addLayout(details_layout, 5)
 
-    self.__button_layout = QVBoxLayout()
+    button_layout = QVBoxLayout()
 
-    self.__button_layout.addStretch(1)
+    button_layout.addStretch(1)
 
     self.__delete_button = QToolButton()
     self.__delete_button.setText('✘')
     self.__delete_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-    self.__button_layout.addWidget(self.__delete_button, 0)
+    button_layout.addWidget(self.__delete_button, 0)
 
-    self.__layout.addLayout(self.__button_layout, 0)
+    layout.addLayout(button_layout, 0)
 
-    self.setLayout(self.__layout)
+    self.setLayout(layout)
 
 _N_PAGES = 10
 _N_ROWS = _N_COLS = 3
@@ -168,14 +168,14 @@ class SaveLoadWindow(QDialog):
       case self.Mode.SAVE:
         self.setWindowTitle('Save')
 
-    self.__layout = QVBoxLayout()
-    self.setLayout(self.__layout)
+    layout = QVBoxLayout()
+    self.setLayout(layout)
 
     self.__page_buttons = PageButtons(_N_PAGES)
-    self.__layout.addWidget(self.__page_buttons, 0)
+    layout.addWidget(self.__page_buttons, 0)
 
     self.__grid = QGridLayout()
-    self.__layout.addLayout(self.__grid, 1)
+    layout.addLayout(self.__grid, 1)
 
     for j in range(_N_ROWS):
       for i in range(_N_COLS):
@@ -189,4 +189,4 @@ class SaveLoadWindow(QDialog):
       self.__grid.setRowStretch(i, 1)
 
     self.__dialog_buttons = QDialogButtonBox(standardButtons=QDialogButtonBox.StandardButton.Cancel)
-    self.__layout.addWidget(self.__dialog_buttons, 0)
+    layout.addWidget(self.__dialog_buttons, 0)

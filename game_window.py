@@ -34,13 +34,13 @@ class SelectionDialog(QDialog):
     self.__button_group = QButtonGroup(self)
     self.__button_group.idClicked.connect(self.__handle_button_clicked)
 
-    self.__layout = QVBoxLayout()
-    self.__layout.addWidget(QLabel(prompt))
+    layout = QVBoxLayout()
+    layout.addWidget(QLabel(prompt))
     for i, choice in enumerate(choices):
       btn = QPushButton(choice)
       self.__button_group.addButton(btn, i)
-      self.__layout.addWidget(btn)
-    self.setLayout(self.__layout)
+      layout.addWidget(btn)
+    self.setLayout(layout)
 
     self.__selected = -1
 
@@ -62,12 +62,12 @@ class MovieWindow(QDialog):
     self.setWindowTitle('Movie')
     self.resize(1280, 720)
 
-    self.__layout = QVBoxLayout()
-    self.__layout.setContentsMargins(0, 0, 0, 0)
+    layout = QVBoxLayout()
+    layout.setContentsMargins(0, 0, 0, 0)
     self.__vw = QVideoWidget()
     self.__vw.videoSink().videoSizeChanged.connect(self.__handle_video_size_change)
-    self.__layout.addWidget(self.__vw)
-    self.setLayout(self.__layout)
+    layout.addWidget(self.__vw)
+    self.setLayout(layout)
 
     # -- private variables
     self.__foo = foo
