@@ -8,6 +8,20 @@ from utils import resolve_path_case_insensitive
 
 @dataclass
 class SystemMessageTable:
+  r"""holds system message strings displayed to
+       user in certain situations.
+
+      this is the data/messages.txt file.
+      the file contains lines separated by a = sign,
+       message key before it and message string after.
+      the file contains escaping such as \n and \t.
+      strings loaded are unescaped for you.
+
+      empty lines is not allowed in the file,
+       except a trailing newline may exist at end of file.
+    """
+
+  # maps message key to the message string
   strings: dict[str, str] = dataclasses.field(default_factory=dict)
 
 _UNESCAPES: dict[str, str] = {r'\n': '\n', r'\t': '\t'}

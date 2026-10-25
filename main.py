@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+"""application entrypoint."""
 
 import argparse
 import os.path

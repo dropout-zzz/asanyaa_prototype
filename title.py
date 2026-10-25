@@ -12,6 +12,9 @@ from script import load_script, ScriptExecutor
 from foo import Foo
 
 class TitleForm(QWidget):
+  """title screen.
+     when user starts a game, TitleForm is hidden."""
+
   def __init__(self,
                qapplication: QApplication,
                asset_root: str,

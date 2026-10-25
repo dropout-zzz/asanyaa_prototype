@@ -1,4 +1,8 @@
 #!/bin/bash
+#
+# generate UI code required by the project.
+# this should be ran when a .ui file is changed or
+#  when ui_*.py does not yet exist.
 set -e
 
 if [ $# -gt 0 ]

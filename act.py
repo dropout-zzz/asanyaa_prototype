@@ -11,37 +11,84 @@ import enum
 from utils import resolve_path_case_insensitive
 
 class ScriptType(enum.IntEnum):
+  # a normal game script.
   SCENARIO = 0
+
+  # a selection script,
+  #  where only dialogue instructions are allowed.
+  # the first dialogue instruction becomes prompt,
+  #  all other dialogue instructions becomes options.
+  # there must not be more than 10 options.
+  # a selection script must have a prompt and at
+  #  least one option.
+  # for options added by dialogue instruction,
+  #  the script's metadata must contain jump destinations for
+  #  each option in the next sub script ID array.
   SELECTION = 1
 
 @dataclass
 class SptDesc:
+  """script metadata that describres a .spt file."""
+
+  # title of this script.
+  # displayed to user in savedata.
   script_title: str = ''
 
+  # line numbers in ACT_*.TXT that
+  #  defines boundaries of this script.
+  # for debugging only.
   first_line_no: int = 0
   last_line_no: int = 0
 
+  # identities of this script.
   script_letter: str = 'A'
   script_id: int = 0
   script_sub_id: int = 0
 
+  # type of this script.
   script_type: ScriptType = ScriptType.SCENARIO
 
+  # information about next script to
+  #  jump to when reaching the
+  #  end of this script.
   next_script_letter: str = 'A'
   next_script_id: int = 0
+  # contains sub script ID of the next script.
+  # for normal scripts, all items except the 1st one is
+  #  set to -1.
+  # for selection scripts, this array contains the
+  #  destinations of choices.
+  # unused items are set to -1.
   next_script_sub_id: list[int] = dataclasses.field(default_factory=lambda: [0] * 10)
 
 @dataclass
 class StringTableEntry:
+  """information used to find a string from text table."""
+
+  # text ID referred by dialogue instructions.
   text_id: int = 0
+
+  # start of the string in ACT_*_JA.TXD
   offset_in_txd: int = 0
+
+  # length of the string in txd.
   length: int = 0
 
 @dataclass
 class Act:
+  """an act owns some related resources such as
+      game scripts and their depended dialogue text table."""
+
+  # letter of this act.
   letter: str = 'A'
+
+  # maps (script ID, script sub-ID) to a SptDesc.
   script_map: dict[tuple[int, int], SptDesc] = dataclasses.field(default_factory=dict)
+
+  # cached string table containing dialogue texts.
   strtab: bytes = b''
+
+  # maps text ID to a StringTableEntry.
   str_info: dict[int, StringTableEntry] = dataclasses.field(default_factory=dict)
 
 def load_act(asset_root: str, letter: str) -> Act:

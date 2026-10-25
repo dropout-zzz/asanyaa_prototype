@@ -1,3 +1,6 @@
+"""implementation of main game instance, user interfaces
+    and game script callbacks."""
+
 # -- py std
 from typing import override
 import re
@@ -27,6 +30,10 @@ from utils import resolve_path_case_insensitive
 from save_load import SavedState
 
 class SelectionDialog(QDialog):
+  """a dialog that prompts user to pick one of a list of options.
+     if the user closes the dialog, dialog code will be Rejected.
+     otherwise if user picks an option, dialog code will be Accepted."""
+
   def __init__(self, parent: QWidget, prompt: str, choices: list[str]):
     QDialog.__init__(self, parent)
     self.setWindowTitle('Choice')
@@ -50,9 +57,16 @@ class SelectionDialog(QDialog):
     self.accept()
 
   def get_selected(self) -> int:
+    """returns index of choice selected by user.
+       this function returns meaningful value only after dialog has closed with an Accepted code."""
     return self.__selected
 
 class MovieWindow(QDialog):
+  """video player.
+     the window closes automatically after the video ends.
+     if an error occurred, it tells about the user and closes the window.
+     the user might click on the video to skip it, if allowed."""
+
   def __init__(self,
                parent: QWidget,
                video_path: str,
@@ -129,6 +143,10 @@ def _get_unescaped(m: re.Match) -> str:
   return _UNESCAPES[m.group(0)]
 
 class GameWindow(QWidget):
+  """an instance of the game. contains user interfaces of the visual novel.
+     the game scenes will not start until run_until_no_more_script() is called.
+     when GameWindow is closed, show() is called on TitleWindow."""
+
   @dataclass
   class State:
     current_dialogue_text_id: int | None = None
@@ -154,6 +172,9 @@ class GameWindow(QWidget):
                script_executor: ScriptExecutor,
                foo: Foo,
                asset_root: str):
+    """constructs an instance.
+       the game will start from progress configured in the ScriptExecutor object."""
+
     QWidget.__init__(self)
     self.__ui = Ui_GameWindow()
     self.__ui.setupUi(self)
@@ -221,12 +242,21 @@ class GameWindow(QWidget):
   # --- public methods start ---
 
   def run_until_no_more_script(self):
+    """start execution of current game script.
+       this function will block until the game window closes.
+       it handles the case when user loads a savedata from UI."""
+
     while self.__executor is not None:
       self.__executor.continue_execution()
 
   def restore_from_state(self, state: State, executor: ScriptExecutor):
-    """intentionally not placing these logics in __init__() to
-        allow loading savedata without re-creating GameWindow."""
+    """restore game presentation state and continue at
+        progress configured in ScriptExecutor object.
+
+       it allows loading savedata without re-creating GameWindow.
+
+       this function doesnt start script execution loop itself, so
+        it requires an active run_until_no_more_script() somewhere else."""
 
     self.__cleanup()
 

@@ -16,15 +16,29 @@ from utils import resolve_path_case_insensitive
 
 @dataclass
 class Instruction:
+  """an undecoded script instruction."""
+
+  # instruction number.
+  # see Opcode enumeration class.
   opcode: int = 0
+
+  # arguments for this instruction.
+  # this contains raw bytes of an
+  #  array of 32-bit integers.
+  # interpretations of these varies depending on
+  #  value of opcode.
   arguments: bytes = b'\x00\x00\x00\x00' * 7
 
 @dataclass
 class Script:
+  """a loaded .spt file. a game script file."""
+
+  # identities of this script.
   letter: str = 'A'
   script_id: int = 0
   script_sub_id: int = 0
 
+  # instructions of this script.
   instructions: list[Instruction] = dataclasses.field(default_factory=list)
 
 def load_script(asset_root: str,
@@ -64,33 +78,107 @@ def load_script(asset_root: str,
 # --- script loader end ---
 
 class Opcode(IntEnum):
+  """list of known instruction numbers."""
+
+  # show a dialogue text to user.
+  # also may play a character voice.
+  #  (if the voice file can be found.)
+  # based on user's settings, the voice can
+  #  continue playing or be stopped when user
+  #  progresses dialogue before voice finished playing.
+  #  (this is called Voice Cut.)
+  # if there is voice currently playing, this
+  #  instruction replaces it with the new one (if exists),
+  #  guaranteeing the new voice starts playback immediately.
+  # if there is voice currently playing but arguments of
+  #  this instruction point to a non-existing voice file,
+  #  the currently playing voice is not stopped.
+  #
+  # this instruction completes when
+  #  user progresses the dialogue.
+  #
+  # this is the only instruction allowed in
+  #  a selection script.
+  # in a selection script, the 1st dialogue becomes
+  #  the prompt text, all subsequent dialogues are
+  #  choices. when the end of selection script is
+  #  reached, the list of selection is shown to user,
+  #  and execution continues at a branch stored in
+  #  current script's next sub script ID array based
+  #  on user's selection.
   DIALOGUE = 0x01
 
   # -- background music
+  # start a background music playback.
+  # the music will be looped.
+  # stop the playback with FADE_OUT_BGM or STOP_BGM.
   PLAY_BGM = 0x06
+  # fade in and start background music playback.
+  # the music will be looped.
+  # stop the playback with FADE_OUT_BGM or STOP_BGM.
   FADE_IN_BGM = 0x07
+  # fade out the currently playing background music and
+  #  stop the playback.
   FADE_OUT_BGM = 0x08
+  # immediately stop the currently playing background music.
   STOP_BGM = 0x09
 
   # -- sound effects
+  # play a sound effect once.
+  # playback can be interrupted with FADE_OUT_SFX.
   PLAY_SFX = 0x0a
+  # play a sound effect with looping.
+  # stop the playback with FADE_OUT_SFX.
   PLAY_SFX_LOOP = 0x0b
+  # fade out the currently playing sound effect.
   FADE_OUT_SFX = 0x0d
 
+  # play a movie video.
+  # this instruction completes when playback finishes.
+  # any error is displayed to user if the game fails to
+  #  play the video and this instruction completes.
+  # the user may click the video area to skip the
+  #  playback. then this instruction immediately finishes and
+  #  the playback stops immediately.
   PLAY_MOVIE = 0x0f
+  # switch to a new background image with
+  #  a transition animation.
   SWITCH_BACKGROUND = 0x13
+  # jump to next script immediately as if
+  #  end of current script is reached.
   SKIP_TO_NEXT_SCRIPT = 0x24
+  # show or hide character face icon next to the
+  #  dialogue text displayed to user.
+  # if face CG index is negative, it means to hide
+  #  any currently shown face icon.
   CHANGE_FACE_CG = 0x2a
 
 class PlayMovieFlag(Flag):
+  """flags passed to PLAY_MOVIE callback."""
+
+  # user may not skip the video playback by clicking the
+  #  video area. by default, if this flag is not specified,
+  #  the video is skippable.
   USER_UNSKIPPABLE = enum.auto()
 
 class ScriptExecutor:
+  """generic evaluator for game script.
+     you should provide all callbacks using setter functions.
+     depending on use case, you may want some of your
+      callback implementation to wait for user action before returning.
+
+     ScriptExecutor will simply ignore and skip through instruction when
+      it sees any unknown opcode in instructions."""
+
   def __init__(self,
                act: Act,
                script: Script,
                instruction_pos: int,
                asset_root: str):
+    """construct a script executor.
+       the initial script and instruction position is passed on arguments.
+       script executor loads subsequent scripts as needed automatically."""
+
     script_map_key = (script.script_id, script.script_sub_id)
 
     if act.letter != script.letter or script_map_key not in act.script_map:
@@ -184,6 +272,9 @@ class ScriptExecutor:
   # --- public methods start ---
 
   def continue_execution(self):
+    """run until stop() is requested.
+       this method should only be called once for each instance."""
+
     while True:
       inst = self.__current_script.instructions[self.__current_instruction]
 
@@ -297,18 +388,28 @@ class ScriptExecutor:
         self.__current_instruction = 0
 
   def stop(self):
+    """request evaluation loop to stop.
+       this method may be used in your callback implementation."""
+
     self.__want_stop = True
 
   # --- getters start ---
 
   def get_act(self) -> Act:
     """return Act instance allowing caller to
-       use it to resolve text IDs."""
+        use it to resolve text IDs."""
     return self.__current_act
 
   # return informations needed for
   #  caller to implement saving.
   def get_instruction_pos(self) -> int:
+    """get current instruction position.
+       this function returns meaningful value only when
+        the evaluation loop is currently active.
+
+       note that when called from callback implementation,
+        this points to instruction currently being executed,
+        rather than the next one."""
     return self.__current_instruction
   def get_script_id(self) -> int:
     return self.__current_script.script_id
