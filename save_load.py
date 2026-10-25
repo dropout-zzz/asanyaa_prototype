@@ -19,7 +19,8 @@ from PySide6.QtWidgets import (QDialog,
                                QDialogButtonBox,
                                QFrame,
                                QLabel,
-                               QSizePolicy)
+                               QSizePolicy,
+                               QScrollArea)
 
 @dataclass
 class SavedState:
@@ -111,6 +112,43 @@ class SavedataSlotWidget(QFrame):
     #
     # without this, StyledPanel does nothing at all on KDE Plasma 6.
     self.setProperty('_breeze_force_frame', True)
+
+    self.__layout = QHBoxLayout()
+
+    self.__image_widget = TopCenteredKeepRatioImageWidget()
+    self.__layout.addWidget(self.__image_widget, 2)
+
+    self.__details_layout = QVBoxLayout()
+
+    self.__title_text_area = QScrollArea()
+    self.__title_text_area.setWidgetResizable(True)
+    self.__title_text_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOn)
+    self.__title_text_area.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+
+    title_text_label = QLabel()
+    title_text_label.setWordWrap(True)
+    title_text_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+    self.__title_text_area.setWidget(title_text_label)
+
+    self.__details_layout.addWidget(self.__title_text_area, 1)
+
+    self.__date_label = QLabel()
+    self.__details_layout.addWidget(self.__date_label, 0)
+
+    self.__layout.addLayout(self.__details_layout, 5)
+
+    self.__button_layout = QVBoxLayout()
+
+    self.__button_layout.addStretch(1)
+
+    self.__delete_button = QToolButton()
+    self.__delete_button.setText('✘')
+    self.__delete_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
+    self.__button_layout.addWidget(self.__delete_button, 0)
+
+    self.__layout.addLayout(self.__button_layout, 0)
+
+    self.setLayout(self.__layout)
 
 _N_PAGES = 10
 _N_ROWS = _N_COLS = 3
