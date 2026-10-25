@@ -2,12 +2,18 @@
     routines to work with savedatas."""
 
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, StrEnum
 import enum
 from typing import override
 import math
+import json
+import base64
 
-from PySide6.QtCore import Qt, QSize
+from PySide6.QtCore import (Qt,
+                            QSize,
+                            QByteArray,
+                            QDataStream,
+                            QIODeviceBase)
 from PySide6.QtGui import QResizeEvent, QPixmap
 from PySide6.QtWidgets import (QDialog,
                                QWidget,
@@ -22,6 +28,28 @@ from PySide6.QtWidgets import (QDialog,
                                QSizePolicy,
                                QScrollArea)
 
+class _SavedataField(StrEnum):
+  DIALOGUE_TEXT_ID = 'msg'
+  FACE_CG_ID = 'fcg'
+  BGM_ID = 'bgm'
+  SFX_ID = 'se'
+  BG_CG_ID = 'bg'
+
+  VERSION = 'v'
+
+  GAME_WINDOW_STATES = 'gw'
+
+  QT_SERIALIZATION_VERSION = 'q'
+  SCREENSHOT = 'ss'
+
+  TIMESTAMP = 't'
+
+  SCRIPT_ID = 'scr'
+  SCRIPT_SUB_ID = 'scr2'
+  ACT_LETTER = 'act'
+
+  INSTRUCTION_POINTER = 'ip'
+
 @dataclass
 class SavedState:
   visible_dialogue_text_id: int | None = None
@@ -29,6 +57,98 @@ class SavedState:
   playing_background_music_id: int | None = None
   looping_sound_effect_id: int | None = None
   visible_background_cg_id: int | None = None
+
+  def serialize(self) -> dict:
+    return {
+      _SavedataField.DIALOGUE_TEXT_ID: self.visible_dialogue_text_id,
+      _SavedataField.FACE_CG_ID: self.visible_face_cg_id,
+      _SavedataField.BGM_ID: self.playing_background_music_id,
+      _SavedataField.SFX_ID: self.looping_sound_effect_id,
+      _SavedataField.BG_CG_ID: self.visible_background_cg_id,
+    }
+
+  @classmethod
+  def deserialize(cls, d: dict):
+    return SavedState(
+      visible_dialogue_text_id=d[_SavedataField.DIALOGUE_TEXT_ID],
+      visible_face_cg_id=d[_SavedataField.FACE_CG_ID],
+      playing_background_music_id=d[_SavedataField.BGM_ID],
+      looping_sound_effect_id=d[_SavedataField.SFX_ID],
+      visible_background_cg_id=d[_SavedataField.BG_CG_ID],
+    )
+
+_SAVEDATA_MAGIC = '#DotAsaSd#'
+_CURRENT_SAVEDATA_VERSION = 0
+
+@dataclass
+class Savedata:
+  state: SavedState
+  thumbnail: QPixmap
+  timestamp: int
+
+  script_id: int
+  script_sub_id: int
+  act_letter: str
+
+  instruction_pos: int
+
+  def save(self, out_file_path: str):
+    d = {_SavedataField.VERSION: _CURRENT_SAVEDATA_VERSION}
+
+    d[_SavedataField.GAME_WINDOW_STATES] = self.state.serialize()
+
+    ba = QByteArray()
+    ds = QDataStream(ba, QIODeviceBase.OpenModeFlag.WriteOnly)
+    d[_SavedataField.QT_SERIALIZATION_VERSION] = ds.version()
+    ds << self.thumbnail
+    del ds
+    d[_SavedataField.SCREENSHOT] = base64.b64encode(ba.data()).decode('ascii')
+
+    d[_SavedataField.TIMESTAMP] = self.timestamp
+
+    d[_SavedataField.SCRIPT_ID] = self.script_id
+    d[_SavedataField.SCRIPT_SUB_ID] = self.script_sub_id
+    d[_SavedataField.ACT_LETTER] = self.act_letter
+
+    d[_SavedataField.INSTRUCTION_POINTER] = self.instruction_pos
+
+    with open(out_file_path, 'w') as f:
+      f.write(_SAVEDATA_MAGIC)
+      json.dump(d, f)
+
+  @classmethod
+  def load(cls, file_path: str):
+    fields = {}
+
+    with open(file_path, 'r') as f:
+      if f.read(len(_SAVEDATA_MAGIC)) != _SAVEDATA_MAGIC:
+        raise ValueError('not a savedata file')
+
+      d = json.load(f)
+
+      ver = d[_SavedataField.VERSION]
+      if ver > _CURRENT_SAVEDATA_VERSION:
+        raise ValueError('unknown savedata version')
+
+      fields['state'] = SavedState.deserialize(d[_SavedataField.GAME_WINDOW_STATES])
+
+      ba = QByteArray(base64.b64decode(d[_SavedataField.SCREENSHOT]))
+      ds = QDataStream(ba)
+      ds.setVersion(d[_SavedataField.QT_SERIALIZATION_VERSION])
+      thumbnail_pixmap = QPixmap()
+      ds >> thumbnail_pixmap
+      del ds
+      fields['thumbnail'] = thumbnail_pixmap
+
+      fields['timestamp'] = d[_SavedataField.TIMESTAMP]
+
+      fields['script_id'] = d[_SavedataField.SCRIPT_ID]
+      fields['script_sub_id'] = d[_SavedataField.SCRIPT_SUB_ID]
+      fields['act_letter'] = d[_SavedataField.ACT_LETTER]
+
+      fields['instruction_pos'] = d[_SavedataField.INSTRUCTION_POINTER]
+
+    return Savedata(**fields)
 
 class PageButtons(QWidget):
   def __init__(self, n: int):
