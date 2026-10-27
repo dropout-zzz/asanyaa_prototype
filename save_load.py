@@ -1,6 +1,7 @@
 """save/load dialog window and
     routines to work with savedatas."""
 
+# -- py std
 from dataclasses import dataclass
 from enum import Enum, StrEnum
 import enum
@@ -8,13 +9,25 @@ from typing import override
 import math
 import json
 import base64
+import os
+import os.path
+import re
+import time
 
+# -- qt
+from PySide6 import QtCore
 from PySide6.QtCore import (Qt,
                             QSize,
                             QByteArray,
                             QDataStream,
-                            QIODeviceBase)
-from PySide6.QtGui import QResizeEvent, QPixmap
+                            QIODeviceBase,
+                            QEvent)
+from PySide6.QtGui import (QResizeEvent,
+                           QPixmap,
+                           QPixmapCache,
+                           QColorConstants,
+                           QPainter,
+                           QMouseEvent)
 from PySide6.QtWidgets import (QDialog,
                                QWidget,
                                QVBoxLayout,
@@ -26,7 +39,11 @@ from PySide6.QtWidgets import (QDialog,
                                QFrame,
                                QLabel,
                                QSizePolicy,
-                               QScrollArea)
+                               QScrollArea,
+                               QAbstractButton)
+
+# -- project modules
+from act import load_act
 
 class _SavedataField(StrEnum):
   DIALOGUE_TEXT_ID = 'msg'
@@ -177,6 +194,9 @@ class PageButtons(QWidget):
 
     self.__button_group.button(0).setChecked(True)
 
+  def get_button_group(self) -> QButtonGroup:
+    return self.__button_group
+
 class TopCenteredKeepRatioImageWidget(QLabel):
   """acknowledgements:
   implementation is largely inspired by:
@@ -220,6 +240,8 @@ class TopCenteredKeepRatioImageWidget(QLabel):
     self.__fixup_ratio(self.size(), pixmap)
 
 class SavedataSlotWidget(QFrame):
+  myCallback = QtCore.Signal(QWidget)
+
   def __init__(self):
     QFrame.__init__(self)
     self.setFrameStyle(QFrame.Shape.StyledPanel | QFrame.Shadow.Sunken)
@@ -232,6 +254,8 @@ class SavedataSlotWidget(QFrame):
     #
     # without this, StyledPanel does nothing at all on KDE Plasma 6.
     self.setProperty('_breeze_force_frame', True)
+
+    self.__savedata: Savedata | None = None
 
     layout = QHBoxLayout()
 
@@ -270,15 +294,58 @@ class SavedataSlotWidget(QFrame):
 
     self.setLayout(layout)
 
+  @override
+  def event(self, event: QEvent) -> bool:
+    # override default implementation of event() which
+    #  doesn't fire mousePressEvent() on disabled widget.
+
+    match event.type():
+      case QEvent.Type.MouseButtonPress:
+        mouse_press_event: QMouseEvent = event
+
+        match mouse_press_event.button():
+          case Qt.MouseButton.LeftButton:
+            self.myCallback.emit(self)
+            return True
+    return QFrame.event(self, event)
+
+  def get_image_widget(self) -> TopCenteredKeepRatioImageWidget:
+    return self.__image_widget
+
+  def get_date_label(self) -> QLabel:
+    return self.__date_label
+
+  def get_title_text_area(self) -> QScrollArea:
+    return self.__title_text_area
+
+  def get_delete_button(self) -> QToolButton:
+    return self.__delete_button
+
+  def set_savedata(self, savedata: Savedata):
+    self.__savedata = savedata
+
+  def get_savedata(self) -> Savedata | None:
+    return self.__savedata
+
 _N_PAGES = 10
 _N_ROWS = _N_COLS = 3
+
+_SAVEDATA_FILE_NAME_PATTERN = re.compile(r'(\d+)')
 
 class SaveLoadWindow(QDialog):
   class Mode(Enum):
     SAVE = enum.auto()
     LOAD = enum.auto()
 
-  def __init__(self, parent: QWidget, mode: Mode):
+  def __init__(self,
+               parent: QWidget,
+               mode: Mode,
+               asset_root: str,
+               savedata_root: str,
+               savedata_to_save: Savedata | None = None):
+    """construct a save/load window.
+       if `mode' is SAVE, `savedata_to_save' must be passed."""
+
     QDialog.__init__(self, parent)
     self.resize(1280, 720)
 
@@ -291,15 +358,29 @@ class SaveLoadWindow(QDialog):
     layout = QVBoxLayout()
     self.setLayout(layout)
 
+    # -- private variables
+    self.__asset_root = asset_root
+    self.__savedata_root = savedata_root
+    self.__current_page = 0
+    self.__existing_save_ids: set[int] = set()
+    self.__savedata_to_save = savedata_to_save
+    self.__user_selected_savedata: Savedata | None = None
+    self.__mode = mode
+
     self.__page_buttons = PageButtons(_N_PAGES)
     layout.addWidget(self.__page_buttons, 0)
 
     self.__grid = QGridLayout()
     layout.addLayout(self.__grid, 1)
 
+    self.__delete_button_group = QButtonGroup(self)
+
     for j in range(_N_ROWS):
       for i in range(_N_COLS):
         ssw = SavedataSlotWidget()
+        ssw.myCallback.connect(self.__handle_cell_clicked)
+        self.__delete_button_group.addButton(ssw.get_delete_button(),
+                                             _N_COLS * j + i)
         self.__grid.addWidget(ssw, j, i)
 
     for i in range(_N_COLS):
@@ -308,5 +389,127 @@ class SaveLoadWindow(QDialog):
     for i in range(_N_ROWS):
       self.__grid.setRowStretch(i, 1)
 
+    for file_name in os.listdir(savedata_root):
+      m = _SAVEDATA_FILE_NAME_PATTERN.fullmatch(file_name)
+      if m is None:
+        continue
+      self.__existing_save_ids.add(int(m.group(0)))
+
+    self.__refresh_slot_contents(0)
+    self.__page_buttons.get_button_group().idClicked.connect(self.__handle_page_button)
+
+    self.__delete_button_group.idClicked.connect(self.__handle_delete_button)
+
     self.__dialog_buttons = QDialogButtonBox(standardButtons=QDialogButtonBox.StandardButton.Cancel)
+    self.__dialog_buttons.clicked.connect(self.__handle_dialog_button)
     layout.addWidget(self.__dialog_buttons, 0)
+
+  def get_selected_savedata(self) -> Savedata | None:
+    return self.__user_selected_savedata
+
+  def __refresh_slot_content(self, cell_widget: SavedataSlotWidget, save_id: int):
+    image_widget = cell_widget.get_image_widget()
+    title_label: QLabel = cell_widget.get_title_text_area().widget()
+    date_label = cell_widget.get_date_label()
+
+    if save_id in self.__existing_save_ids:
+      cell_widget.setEnabled(True)
+
+      savedata = Savedata.load(os.path.join(self.__savedata_root, str(save_id)))
+      cell_widget.set_savedata(savedata)
+
+      image_widget.setPixmap(savedata.thumbnail)
+
+      act = load_act(self.__asset_root, savedata.act_letter)
+      desc = act.script_map[(savedata.script_id, savedata.script_sub_id)]
+      title_label.setText(desc.script_title)
+
+      date_label.setText(time.strftime('%Y/%m/%d %H:%M',
+                                       time.localtime(savedata.timestamp)))
+    else:
+      cell_widget.setEnabled(False)
+      cell_widget.set_savedata(None)
+
+      no_data_font = image_widget.font()
+      no_data_font.setBold(True)
+      no_data_font.setPixelSize(20)
+
+      no_data_pixmap_key = f'DotAsaSl,{no_data_font.key()}'
+
+      no_data_pixmap = QPixmap()
+      if not QPixmapCache.find(no_data_pixmap_key, no_data_pixmap):
+        no_data_pixmap = QPixmap(160, 90)
+        no_data_pixmap.fill(QColorConstants.Black)
+
+        painter = QPainter(no_data_pixmap)
+        painter.setFont(no_data_font)
+        painter.setPen(QColorConstants.White)
+        painter.drawText(0, 0,
+                         no_data_pixmap.width(),
+                         no_data_pixmap.height(),
+                         Qt.AlignmentFlag.AlignCenter,
+                         'NO DATA')
+        del painter
+
+        QPixmapCache.insert(no_data_pixmap_key, no_data_pixmap)
+
+      image_widget.setPixmap(no_data_pixmap)
+      date_label.setText('--')
+      title_label.setText('(...)')
+
+  def __refresh_slot_contents(self, page_id: int):
+    save_id_base_page = _N_ROWS * _N_COLS * page_id
+    for j in range(_N_ROWS):
+      save_id_base_row = save_id_base_page + _N_COLS * j
+      for i in range(_N_COLS):
+        save_id = save_id_base_row + i
+        cell_widget: SavedataSlotWidget = self.__grid.itemAtPosition(j, i).widget()
+        self.__refresh_slot_content(cell_widget, save_id)
+
+  @QtCore.Slot(int)
+  def __handle_page_button(self, button_id: int):
+    page_id = button_id
+
+    if page_id == self.__current_page:
+      return
+
+    self.__current_page = page_id
+    self.__refresh_slot_contents(page_id)
+
+  @QtCore.Slot(QAbstractButton)
+  def __handle_dialog_button(self, button: QAbstractButton):
+    match self.__dialog_buttons.standardButton(button):
+      case QDialogButtonBox.StandardButton.Cancel:
+        self.reject()
+
+  @QtCore.Slot(QWidget)
+  def __handle_cell_clicked(self, widget: QWidget):
+    cell_widget: SavedataSlotWidget = widget
+    widget_index = self.__grid.indexOf(cell_widget)
+    row, col, _, _ = self.__grid.getItemPosition(widget_index)
+    save_id = _N_ROWS * _N_COLS * self.__current_page + _N_COLS * row + col
+
+    match self.__mode:
+      case self.Mode.SAVE:
+        self.__savedata_to_save.save(os.path.join(self.__savedata_root,
+                                                  str(save_id)))
+        self.__existing_save_ids.add(save_id)
+        self.__refresh_slot_content(cell_widget, save_id)
+        self.accept()
+      case self.Mode.LOAD:
+        if save_id not in self.__existing_save_ids:
+          # clicked on empty slot
+          return
+        self.__user_selected_savedata = cell_widget.get_savedata()
+        self.accept()
+
+  @QtCore.Slot(int)
+  def __handle_delete_button(self, button_id: int):
+    save_id = _N_ROWS * _N_COLS * self.__current_page + button_id
+
+    os.remove(os.path.join(self.__savedata_root, str(save_id)))
+    self.__existing_save_ids.remove(save_id)
+
+    y, x = divmod(button_id, _N_COLS)
+    cell_widget = self.__grid.itemAtPosition(y, x).widget()
+    self.__refresh_slot_content(cell_widget, save_id)

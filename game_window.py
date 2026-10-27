@@ -5,6 +5,7 @@
 from typing import override
 import re
 from dataclasses import dataclass
+import time
 
 # -- qt
 from PySide6 import QtCore
@@ -24,10 +25,15 @@ from PySide6.QtMultimediaWidgets import QVideoWidget
 from ui_game_window import Ui_GameWindow
 
 # -- project modules
-from script import ScriptExecutor, PlayMovieFlag
+from script import (ScriptExecutor,
+                    PlayMovieFlag,
+                    load_script)
 from foo import Foo
 from utils import resolve_path_case_insensitive
-from save_load import SavedState
+from save_load import (SavedState,
+                       SaveLoadWindow,
+                       Savedata)
+from act import load_act
 
 class SelectionDialog(QDialog):
   """a dialog that prompts user to pick one of a list of options.
@@ -169,9 +175,10 @@ class GameWindow(QWidget):
 
   def __init__(self,
                title_window: QWidget,
-               script_executor: ScriptExecutor,
+               script_executor: ScriptExecutor | None,
                foo: Foo,
-               asset_root: str):
+               asset_root: str,
+               savedata_root: str):
     """constructs an instance.
        the game will start from progress configured in the ScriptExecutor object."""
 
@@ -185,6 +192,7 @@ class GameWindow(QWidget):
     self.__dialogue_wait_event_loop: QEventLoop | None = None
     self.__foo = foo
     self.__asset_root = asset_root
+    self.__savedata_root = savedata_root
     self.__state = self.State()
 
     self.__ao_voice = QAudioOutput(self)
@@ -199,26 +207,11 @@ class GameWindow(QWidget):
     self.__mp_sfx = QMediaPlayer(self, audioOutput=self.__ao_sfx)
 
     self.__ui.pushButton_backToTitle.clicked.connect(self.__do_back_to_title)
+    self.__ui.pushButton_saveGame.clicked.connect(self.__do_save_game)
+    self.__ui.pushButton_loadGame.clicked.connect(self.__do_load_game)
 
-    # --- register callbacks start ---
-
-    self.__executor.set_ask_choices_callback(self.__handle_ask_choices)
-    self.__executor.set_show_dialogue_wait_callback(self.__handle_show_dialogue_wait)
-    self.__executor.set_set_face_cg_callback(self.__handle_set_face_cg)
-
-    self.__executor.set_play_bgm_callback(self.__handle_play_bgm)
-    self.__executor.set_fade_in_bgm_callback(self.__handle_play_bgm)
-    self.__executor.set_fade_out_bgm_callback(self.__handle_stop_bgm)
-    self.__executor.set_stop_bgm_callback(self.__handle_stop_bgm)
-
-    self.__executor.set_play_sfx_callback(self.__handle_play_sfx)
-    self.__executor.set_play_sfx_loop_callback(self.__handle_play_sfx_loop)
-    self.__executor.set_fade_out_sfx(self.__handle_fade_out_sfx)
-
-    self.__executor.set_play_movie_callback(self.__handle_play_movie)
-    self.__executor.set_switch_background_callback(self.__handle_switch_background)
-
-    # --- register callbacks end ---
+    if script_executor is not None:
+      self.__register_executor_callbacks()
 
   # --- overridden methods start ---
 
@@ -268,8 +261,11 @@ class GameWindow(QWidget):
     self.__ui.label_faceImageArea.clear()
 
     # --
+
     self.__state = state
+
     self.__executor = executor
+    self.__register_executor_callbacks()
 
     # -- now actually restore UI
 
@@ -323,7 +319,8 @@ class GameWindow(QWidget):
     event_loop.quit()
 
   def __cleanup(self):
-    self.__executor.stop()
+    if self.__executor is not None:
+      self.__executor.stop()
 
     if self.__has_pending_dialogue():
       self.__abort_pending_dialogue()
@@ -348,6 +345,23 @@ class GameWindow(QWidget):
     file_path = resolve_path_case_insensitive(self.__asset_root, 'CG', file_name)
     self.__ui.label_background.setPixmap(QPixmap(file_path, format='BMP'))
 
+  def __register_executor_callbacks(self):
+    self.__executor.set_ask_choices_callback(self.__handle_ask_choices)
+    self.__executor.set_show_dialogue_wait_callback(self.__handle_show_dialogue_wait)
+    self.__executor.set_set_face_cg_callback(self.__handle_set_face_cg)
+
+    self.__executor.set_play_bgm_callback(self.__handle_play_bgm)
+    self.__executor.set_fade_in_bgm_callback(self.__handle_play_bgm)
+    self.__executor.set_fade_out_bgm_callback(self.__handle_stop_bgm)
+    self.__executor.set_stop_bgm_callback(self.__handle_stop_bgm)
+
+    self.__executor.set_play_sfx_callback(self.__handle_play_sfx)
+    self.__executor.set_play_sfx_loop_callback(self.__handle_play_sfx_loop)
+    self.__executor.set_fade_out_sfx(self.__handle_fade_out_sfx)
+
+    self.__executor.set_play_movie_callback(self.__handle_play_movie)
+    self.__executor.set_switch_background_callback(self.__handle_switch_background)
+
   # --- private methods end ---
 
   # --- qt callbacks start ---
@@ -356,6 +370,52 @@ class GameWindow(QWidget):
   def __do_back_to_title(self):
     self.__tw.show()
     self.close()
+
+  @QtCore.Slot()
+  def __do_save_game(self):
+    state = SavedState()
+    state.visible_dialogue_text_id = self.__state.current_dialogue_text_id
+    state.visible_face_cg_id = self.__state.current_face_cg_id
+    state.playing_background_music_id = self.__state.current_background_music_id
+    state.looping_sound_effect_id = self.__state.current_sound_effect_id
+    state.visible_background_cg_id = self.__state.current_background_cg_id
+
+    savedata = Savedata(state=state,
+                        thumbnail=self.grab().scaled(160, 90,
+                                                     Qt.AspectRatioMode.KeepAspectRatio,
+                                                     Qt.TransformationMode.SmoothTransformation),
+                        timestamp=int(time.time()),
+                        script_id=self.__executor.get_script_id(),
+                        script_sub_id=self.__executor.get_script_sub_id(),
+                        act_letter=self.__executor.get_act_letter(),
+                        instruction_pos=self.__executor.get_instruction_pos())
+
+    slw = SaveLoadWindow(self,
+                         SaveLoadWindow.Mode.SAVE,
+                         self.__asset_root,
+                         self.__savedata_root,
+                         savedata)
+    slw.exec()
+
+  @QtCore.Slot()
+  def __do_load_game(self):
+    slw = SaveLoadWindow(self,
+                         SaveLoadWindow.Mode.LOAD,
+                         self.__asset_root,
+                         self.__savedata_root)
+    if slw.exec() == QDialog.DialogCode.Accepted:
+      sd = slw.get_selected_savedata()
+      new_act = load_act(self.__asset_root, sd.act_letter)
+      new_script = load_script(self.__asset_root,
+                               sd.act_letter,
+                               sd.script_id,
+                               sd.script_sub_id)
+      new_executor = ScriptExecutor(new_act,
+                                    new_script,
+                                    sd.instruction_pos,
+                                    self.__asset_root)
+      self.restore_from_state(GameWindow.State.from_saved_state(sd.state),
+                              new_executor)
 
   # --- qt callbacks end ---
 

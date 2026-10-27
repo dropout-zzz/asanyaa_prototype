@@ -415,7 +415,7 @@ class ScriptExecutor:
     return self.__current_script.script_id
   def get_script_sub_id(self) -> int:
     return self.__current_script.script_sub_id
-  def get_act_letter(self) -> int:
+  def get_act_letter(self) -> str:
     return self.__current_act.letter
 
   # --- getters end ---
