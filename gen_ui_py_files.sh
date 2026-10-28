@@ -11,9 +11,7 @@ then
   exit 1
 fi
 
-# location of `uic' binary on archlinux
-PATH="/usr/lib/qt6:${PATH}"
-export PATH
+dot_uic="$(qmake6 -query QT_INSTALL_LIBEXECS)/uic"
 
 dot_ui_names=('title'
               'game_window')
@@ -31,7 +29,7 @@ do
   fi
 
   (set -x;
-   uic -o "$dot_ui_py" -g python "$dot_ui_file")
+   $dot_uic -o "$dot_ui_py" -g python "$dot_ui_file")
 done
 
 exit 0
