@@ -1,0 +1,31 @@
+--- 0.1.0a ---
+
+implemented:
+* parsing basic game assets
+* basic script interpreter
+* basic pyside6-based user interfaces
+* basic script execution flow
+* starting new game
+* choices
+* progressable text dialogues
+* character face icons
+* opening movie
+* character voice
+* background music
+* sound effects
+* background images
+* saving/loading (exclusive format)
+
+todo:
+* conditional jumping instructions not implemented in script interpreter
+  rendering game unprogressable at certain point
+* transition animations unimplemented
+  certain animated scenes being skipped
+* reading *.fpk and *.kg unimplemented
+* savedata format incompatible with original game
+  cannot load a save written by original game
+* 立ち絵
+* presentation control instructions unimplemented
+  certain scene has minor misbehavior due to this
+* some rarer variant of instruction for changing background images unimplemented
+  causes misbehavior in certain scene
